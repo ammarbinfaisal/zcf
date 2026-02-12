@@ -18,7 +18,7 @@
 }
 
 .animate-bg-position {
-  animation: bg-position 3s infinite alternate;
+  animation: bg-position 18s infinite alternate;
 }
 
 @theme inline {
@@ -68,91 +68,91 @@
   --radius: 0.625rem;
 
   /* 60/30/10 palette */
-  --brand-base: #fffdf5; /* 60% */
-  --brand-purple: #6c5ce7; /* 30% */
-  --brand-orange: #ff7675; /* 10% */
+  --brand-cream: #fbf6ea; /* 60% */
+  --brand-olive: #556b2f; /* 30% */
+  --brand-ochre: #c9a227; /* 10% */
 
-  --background: var(--brand-base);
-  --foreground: #1a1630;
+  --background: var(--brand-cream);
+  --foreground: #1f1b16;
 
-  --card: #ffffff;
+  --card: color-mix(in srgb, white 70%, var(--brand-cream));
   --card-foreground: var(--foreground);
-  --popover: #ffffff;
+  --popover: var(--card);
   --popover-foreground: var(--foreground);
 
-  --primary: var(--brand-purple);
-  --primary-foreground: var(--brand-base);
+  --primary: var(--brand-olive);
+  --primary-foreground: var(--brand-cream);
 
-  --secondary: color-mix(in srgb, var(--brand-purple) 12%, var(--brand-base));
-  --secondary-foreground: #2c245f;
+  --secondary: color-mix(in srgb, var(--brand-olive) 10%, var(--brand-cream));
+  --secondary-foreground: color-mix(in srgb, var(--foreground) 92%, var(--brand-olive));
 
-  --muted: color-mix(in srgb, var(--brand-purple) 6%, var(--brand-base));
-  --muted-foreground: color-mix(in srgb, var(--foreground) 55%, var(--brand-base));
+  --muted: color-mix(in srgb, var(--brand-olive) 4%, var(--brand-cream));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 62%, var(--brand-cream));
 
-  --accent: color-mix(in srgb, var(--brand-orange) 14%, var(--brand-base));
+  --accent: color-mix(in srgb, var(--brand-ochre) 14%, var(--brand-cream));
   --accent-foreground: var(--foreground);
 
   --destructive: #e5484d;
-  --border: color-mix(in srgb, var(--brand-purple) 18%, var(--brand-base));
-  --input: color-mix(in srgb, var(--brand-purple) 18%, var(--brand-base));
-  --ring: var(--brand-orange);
+  --border: color-mix(in srgb, var(--brand-olive) 16%, var(--brand-cream));
+  --input: color-mix(in srgb, var(--brand-olive) 16%, var(--brand-cream));
+  --ring: var(--brand-ochre);
 
-  --chart-1: var(--brand-purple);
-  --chart-2: var(--brand-orange);
-  --chart-3: color-mix(in srgb, var(--brand-purple) 60%, var(--brand-base));
-  --chart-4: color-mix(in srgb, var(--brand-orange) 60%, var(--brand-base));
-  --chart-5: color-mix(in srgb, var(--brand-purple) 30%, var(--brand-orange));
+  --chart-1: var(--brand-olive);
+  --chart-2: var(--brand-ochre);
+  --chart-3: color-mix(in srgb, var(--brand-olive) 55%, var(--brand-cream));
+  --chart-4: color-mix(in srgb, var(--brand-ochre) 60%, var(--brand-cream));
+  --chart-5: color-mix(in srgb, var(--brand-olive) 45%, var(--brand-ochre));
 
-  --sidebar: var(--brand-base);
+  --sidebar: var(--brand-cream);
   --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--brand-purple);
-  --sidebar-primary-foreground: var(--brand-base);
-  --sidebar-accent: color-mix(in srgb, var(--brand-orange) 12%, var(--brand-base));
+  --sidebar-primary: var(--brand-olive);
+  --sidebar-primary-foreground: var(--brand-cream);
+  --sidebar-accent: color-mix(in srgb, var(--brand-ochre) 12%, var(--brand-cream));
   --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: color-mix(in srgb, var(--brand-purple) 18%, var(--brand-base));
-  --sidebar-ring: var(--brand-orange);
+  --sidebar-border: color-mix(in srgb, var(--brand-olive) 16%, var(--brand-cream));
+  --sidebar-ring: var(--brand-ochre);
 }
 
 .dark {
-  --background: #130f26;
-  --foreground: var(--brand-base);
+  --background: #12110d;
+  --foreground: var(--brand-cream);
 
-  --card: color-mix(in srgb, #130f26 75%, var(--brand-purple));
-  --card-foreground: var(--brand-base);
-  --popover: color-mix(in srgb, #130f26 75%, var(--brand-purple));
-  --popover-foreground: var(--brand-base);
+  --card: color-mix(in srgb, #12110d 82%, var(--brand-olive));
+  --card-foreground: var(--brand-cream);
+  --popover: var(--card);
+  --popover-foreground: var(--brand-cream);
 
-  --primary: var(--brand-purple);
-  --primary-foreground: var(--brand-base);
+  --primary: var(--brand-olive);
+  --primary-foreground: var(--brand-cream);
 
-  --secondary: color-mix(in srgb, var(--brand-purple) 22%, #130f26);
-  --secondary-foreground: var(--brand-base);
+  --secondary: color-mix(in srgb, var(--brand-olive) 22%, #12110d);
+  --secondary-foreground: var(--brand-cream);
 
-  --muted: color-mix(in srgb, var(--brand-purple) 14%, #130f26);
-  --muted-foreground: color-mix(in srgb, var(--brand-base) 70%, #130f26);
+  --muted: color-mix(in srgb, var(--brand-olive) 14%, #12110d);
+  --muted-foreground: color-mix(in srgb, var(--brand-cream) 72%, #12110d);
 
-  --accent: color-mix(in srgb, var(--brand-orange) 18%, #130f26);
-  --accent-foreground: var(--brand-base);
+  --accent: color-mix(in srgb, var(--brand-ochre) 18%, #12110d);
+  --accent-foreground: var(--brand-cream);
 
   --destructive: #ff5a5f;
-  --border: color-mix(in srgb, var(--brand-purple) 22%, #130f26);
-  --input: color-mix(in srgb, var(--brand-purple) 22%, #130f26);
-  --ring: var(--brand-orange);
+  --border: color-mix(in srgb, var(--brand-olive) 22%, #12110d);
+  --input: color-mix(in srgb, var(--brand-olive) 22%, #12110d);
+  --ring: var(--brand-ochre);
 
-  --chart-1: var(--brand-purple);
-  --chart-2: var(--brand-orange);
-  --chart-3: color-mix(in srgb, var(--brand-purple) 50%, var(--brand-base));
-  --chart-4: color-mix(in srgb, var(--brand-orange) 50%, var(--brand-base));
-  --chart-5: color-mix(in srgb, var(--brand-purple) 35%, var(--brand-orange));
+  --chart-1: var(--brand-olive);
+  --chart-2: var(--brand-ochre);
+  --chart-3: color-mix(in srgb, var(--brand-olive) 55%, var(--brand-cream));
+  --chart-4: color-mix(in srgb, var(--brand-ochre) 55%, var(--brand-cream));
+  --chart-5: color-mix(in srgb, var(--brand-olive) 45%, var(--brand-ochre));
 
-  --sidebar: #130f26;
-  --sidebar-foreground: var(--brand-base);
-  --sidebar-primary: var(--brand-purple);
-  --sidebar-primary-foreground: var(--brand-base);
-  --sidebar-accent: color-mix(in srgb, var(--brand-orange) 18%, #130f26);
-  --sidebar-accent-foreground: var(--brand-base);
-  --sidebar-border: color-mix(in srgb, var(--brand-purple) 22%, #130f26);
-  --sidebar-ring: var(--brand-orange);
+  --sidebar: #12110d;
+  --sidebar-foreground: var(--brand-cream);
+  --sidebar-primary: var(--brand-olive);
+  --sidebar-primary-foreground: var(--brand-cream);
+  --sidebar-accent: color-mix(in srgb, var(--brand-ochre) 18%, #12110d);
+  --sidebar-accent-foreground: var(--brand-cream);
+  --sidebar-border: color-mix(in srgb, var(--brand-olive) 22%, #12110d);
+  --sidebar-ring: var(--brand-ochre);
 }
 
 @layer base {
@@ -164,22 +164,49 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--brand-orange) 45%, transparent);
+    background: color-mix(in srgb, var(--brand-ochre) 38%, transparent);
   }
 
   h1,
   h2,
   h3,
   h4 {
-    color: var(--brand-purple);
+    color: var(--brand-olive);
   }
 
   a {
-    color: var(--brand-purple);
+    color: var(--brand-olive);
     text-underline-offset: 0.18em;
   }
 
   a:hover {
-    color: var(--brand-orange);
+    color: var(--brand-ochre);
+  }
+}
+
+@layer utilities {
+  .reveal {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+    transition:
+      opacity 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .reveal[data-revealed="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      transition: none;
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
   }
 }

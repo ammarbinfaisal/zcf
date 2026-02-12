@@ -25,7 +25,7 @@ export function SiteHeader() {
             className="h-11 w-11"
           />
           <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight text-[color:var(--brand-purple)]">
+            <div className="text-sm font-semibold tracking-tight text-[color:var(--brand-olive)]">
               {site.shortName}
             </div>
             <div className="hidden text-xs text-muted-foreground sm:block">{site.name}</div>
