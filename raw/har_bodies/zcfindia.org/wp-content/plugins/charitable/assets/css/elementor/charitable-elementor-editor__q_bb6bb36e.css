@@ -1,0 +1,121 @@
+/**
+ * Elementor editor-specific styles for Charitable Campaigns Widget
+ */
+
+/* Editor-only styling for campaigns shortcode */
+.elementor-editor-active .charitable-elementor-editor-wrapper {
+    /* Make the wrapper stand out in the editor */
+    /* border: 2px dashed #e52e6d;
+    padding: 15px;
+    background-color: rgba(229, 46, 109, 0.05);
+    margin: 10px 0;
+    position: relative; */
+}
+
+/* Specific styling for the donation form widget only */
+.elementor-editor-active .elementor-widget-charitable_donation_form .charitable-elementor-editor-wrapper {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #e52e6d;
+    padding: 15px;
+    background-color: rgba(229, 46, 109, 0.05);
+    margin: 10px 0;
+    position: relative;
+}
+
+.elementor-editor-active .elementor-widget-charitable_donation_form .charitable-elementor-editor-wrapper::before {
+    content: "Donation Form Cannot Be Previewed In Elementor Editor";
+    display: block;
+    background: #e52e6d;
+    color: white;
+    padding: 5px 10px;
+    font-size: 12px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+}
+
+/* Hide the actual form content in editor - donation form widget only */
+.elementor-editor-active .elementor-widget-charitable_donation_form .charitable-elementor-editor-wrapper > * {
+    display: none;
+}
+
+/* Show placeholder text - donation form widget only */
+.elementor-editor-active .elementor-widget-charitable_donation_form .charitable-elementor-editor-wrapper::after {
+    content: "The donation form will be displayed on the frontend.";
+    display: block;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+.campaign-loop.campaign-grid:before, .campaign-loop.campaign-grid:after {
+    display: none;
+}
+
+.campaign-loop.campaign-grid:after {
+    clear: both;
+}
+/* Style adjustments for campaign grid in editor */
+.elementor-editor-active .charitable-elementor-editor-wrapper .campaign-grid {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.elementor-editor-active .charitable-elementor-editor-wrapper:hover .campaign-grid {
+    opacity: 1;
+}
+
+/* Improved visibility for campaign elements in editor */
+.elementor-editor-active .charitable-elementor-editor-wrapper .campaign-title,
+.elementor-editor-active .charitable-elementor-editor-wrapper .campaign-excerpt {
+    color: #333;
+}
+
+.elementor-editor-active .charitable-elementor-editor-wrapper .campaign-loop-wrapper {
+    overflow: visible;
+}
+
+/* Make sure buttons are easily visible in editor */
+.elementor-editor-active .charitable-elementor-editor-wrapper .campaign-button {
+    pointer-events: none;
+}
+
+.campaign-loop.campaign-grid.campaign-grid-2 {
+    /* make a grid of 2 columns */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1em;
+  }
+
+  .campaign-loop.campaign-grid.campaign-grid-3 {
+    /* make a grid of 3 columns */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1em;
+  }
+
+  .campaign-loop.campaign-grid.campaign-grid-4 {
+    /* make a grid of 4 columns */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1em;
+  }
+
+  .campaign-loop.campaign-grid.campaign-grid-5 {
+    /* make a grid of 5 columns */
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1em;
+  }
+
+  .campaign-loop.campaign-grid.campaign-grid-6 {
+    /* make a grid of 6 columns */
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1em;
+  }

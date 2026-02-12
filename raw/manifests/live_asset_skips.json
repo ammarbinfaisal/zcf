@@ -1,0 +1,54 @@
+[
+  {
+    "url": "https://fonts.googleapis.com/",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://fonts.googleapis.com/css?family=Montserrat%3A100%2C200%2C300%2Cregular%2C500%2C600%2C700%2C800%2C900%7CFraunces%3A100%2C200%2C300%2Cregular%2C500%2C600%2C700%2C800%2C900",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://fonts.googleapis.com/css?family=Roboto%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic%7CRoboto+Slab%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic%7CMontserrat%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic&display=swap&ver=6.9.1",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://fonts.googleapis.com/css?family=Roboto%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic%7CRoboto+Slab%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic&display=swap&ver=6.9.1",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://fonts.gstatic.com/",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://gmpg.org/xfn/11",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://maps.google.com/maps?width=520&height=400&hl=en&q=Flat%20No.%2002,%203rd%20floor,%20C-block,%20%20Shahid%20Apartment%20Golaganj%20Lucknow%20Lucknow+(Flat%20No.%2002,%203rd%20floor,%20C-block,%20%20Shahid%20Apartment%20Golaganj%20Lucknow)&t=&z=12&ie=UTF8&iwloc=B&output=embed",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://news.google.com/",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://news.google.com/swg/js/v1/swg-basic.js",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://www.googletagmanager.com/",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://www.googletagmanager.com/gtag/js?id=G-YVV3HQR2WC",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://www.googletagmanager.com/gtag/js?id=GT-TW5JVGH3",
+    "reason": "external_host"
+  },
+  {
+    "url": "https://www.googletagmanager.com/ns.html?id=GTM-KR2JGWB4",
+    "reason": "external_host"
+  }
+]

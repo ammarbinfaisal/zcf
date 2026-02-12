@@ -1,0 +1,20 @@
+[
+  {
+    "har_file": "zcfindia.org.har",
+    "entries": 1536,
+    "pages": 11,
+    "page_urls": [
+      "https://zcfindia.org/",
+      "https://zcfindia.org/about/",
+      "https://zcfindia.org/brainy-bright-academy/",
+      "https://zcfindia.org/contact/",
+      "https://zcfindia.org/image-gallery/",
+      "https://zcfindia.org/news/",
+      "https://zcfindia.org/our-projects/",
+      "https://zcfindia.org/talk-entrepreneurship-awareness/",
+      "https://zcfindia.org/video-gallery/",
+      "https://zcfindia.org/zakat-calculator/",
+      "https://zcfindia.org/zakat-nisab/"
+    ]
+  }
+]

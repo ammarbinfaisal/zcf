@@ -1,0 +1,112 @@
+{
+  "primary_hosts": [
+    "zcfindia.org"
+  ],
+  "seed_routes": [
+    "https://zcfindia.org/",
+    "https://zcfindia.org/about/",
+    "https://zcfindia.org/brainy-bright-academy/",
+    "https://zcfindia.org/contact/",
+    "https://zcfindia.org/image-gallery/",
+    "https://zcfindia.org/news/",
+    "https://zcfindia.org/our-projects/",
+    "https://zcfindia.org/talk-entrepreneurship-awareness/",
+    "https://zcfindia.org/video-gallery/",
+    "https://zcfindia.org/zakat-calculator/",
+    "https://zcfindia.org/zakat-nisab/"
+  ],
+  "all_routes": [
+    "https://zcfindia.org/",
+    "https://zcfindia.org/2023/02/",
+    "https://zcfindia.org/2023/03/",
+    "https://zcfindia.org/2024/03/",
+    "https://zcfindia.org/2025/11/",
+    "https://zcfindia.org/about/",
+    "https://zcfindia.org/an-important-and-interactive-meeting-on-collective-system-of-zakat/",
+    "https://zcfindia.org/author/by-dr-safia-amir/",
+    "https://zcfindia.org/author/zakat/",
+    "https://zcfindia.org/become-a-volunteer/",
+    "https://zcfindia.org/brainy-bright-academy/",
+    "https://zcfindia.org/category/education/",
+    "https://zcfindia.org/category/news/",
+    "https://zcfindia.org/contact/",
+    "https://zcfindia.org/donation/",
+    "https://zcfindia.org/image-gallery/",
+    "https://zcfindia.org/importance-of-zakat-and-its-social-obligation/",
+    "https://zcfindia.org/news/",
+    "https://zcfindia.org/our-projects/",
+    "https://zcfindia.org/privacy-policy/",
+    "https://zcfindia.org/talk-entrepreneurship-awareness/",
+    "https://zcfindia.org/terms-and-conditions/",
+    "https://zcfindia.org/video-gallery/",
+    "https://zcfindia.org/zakat-calculator/",
+    "https://zcfindia.org/zakat-nisab/",
+    "https://zcfindia.org/zcf-participation-at-the-amp-national-ngo-conference-lucknow/"
+  ],
+  "all_route_paths": [
+    "/",
+    "/2023/02/",
+    "/2023/03/",
+    "/2024/03/",
+    "/2025/11/",
+    "/about/",
+    "/an-important-and-interactive-meeting-on-collective-system-of-zakat/",
+    "/author/by-dr-safia-amir/",
+    "/author/zakat/",
+    "/become-a-volunteer/",
+    "/brainy-bright-academy/",
+    "/category/education/",
+    "/category/news/",
+    "/contact/",
+    "/donation/",
+    "/image-gallery/",
+    "/importance-of-zakat-and-its-social-obligation/",
+    "/news/",
+    "/our-projects/",
+    "/privacy-policy/",
+    "/talk-entrepreneurship-awareness/",
+    "/terms-and-conditions/",
+    "/video-gallery/",
+    "/zakat-calculator/",
+    "/zakat-nisab/",
+    "/zcf-participation-at-the-amp-national-ngo-conference-lucknow/"
+  ],
+  "route_tree": {
+    "/": {},
+    "2023": {
+      "02": {},
+      "03": {}
+    },
+    "2024": {
+      "03": {}
+    },
+    "2025": {
+      "11": {}
+    },
+    "about": {},
+    "an-important-and-interactive-meeting-on-collective-system-of-zakat": {},
+    "author": {
+      "by-dr-safia-amir": {},
+      "zakat": {}
+    },
+    "become-a-volunteer": {},
+    "brainy-bright-academy": {},
+    "category": {
+      "education": {},
+      "news": {}
+    },
+    "contact": {},
+    "donation": {},
+    "image-gallery": {},
+    "importance-of-zakat-and-its-social-obligation": {},
+    "news": {},
+    "our-projects": {},
+    "privacy-policy": {},
+    "talk-entrepreneurship-awareness": {},
+    "terms-and-conditions": {},
+    "video-gallery": {},
+    "zakat-calculator": {},
+    "zakat-nisab": {},
+    "zcf-participation-at-the-amp-national-ngo-conference-lucknow": {}
+  }
+}

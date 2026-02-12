@@ -1,0 +1,194 @@
+@font-face {
+  font-family: 'icomoon';
+  src:
+    url('fonts/icomoon.ttf?3khr0i') format('truetype'),
+    url('fonts/icomoon.woff?3khr0i') format('woff'),
+    url('fonts/icomoon.svg?3khr0i#icomoon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="icomoon-"], [class*=" icomoon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icomoon' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icomoon-modern-house-1:before {
+  content: "\e937";
+}
+.icomoon-modern-house:before {
+  content: "\e935";
+}
+.icomoon-hand:before {
+  content: "\e920";
+}
+.icomoon-hexagon:before {
+  content: "\e927";
+}
+.icomoon-Stethoscope:before {
+  content: "\e92a";
+}
+.icomoon-flower-rose:before {
+  content: "\e936";
+}
+.icomoon-play-button:before {
+  content: "\e905";
+}
+.icomoon-skype:before {
+  content: "\e902";
+}
+.icomoon-twitter:before {
+  content: "\e903";
+}
+.icomoon-facebook1:before {
+  content: "\e904";
+}
+.icomoon-quote-right:before {
+  content: "\e900";
+}
+.icomoon-phone-call:before {
+  content: "\e901";
+}
+.icomoon-facebook:before {
+  content: "\e906";
+}
+.icomoon-category:before {
+  content: "\e907";
+}
+.icomoon-clock-2:before {
+  content: "\e908";
+}
+.icomoon-calendar-2:before {
+  content: "\e909";
+}
+.icomoon-admin:before {
+  content: "\e90a";
+}
+.icomoon-positive-review:before {
+  content: "\e90b";
+}
+.icomoon-send:before {
+  content: "\e90c";
+}
+.icomoon-Star:before {
+  content: "\e90d";
+}
+.icomoon-arroba:before {
+  content: "\e90e";
+}
+.icomoon-phone:before {
+  content: "\e90f";
+}
+.icomoon-humanitarian-aid:before {
+  content: "\e910";
+}
+.icomoon-puzzle:before {
+  content: "\e911";
+}
+.icomoon-water-2:before {
+  content: "\e912";
+}
+.icomoon-Healthy-Living:before {
+  content: "\e913";
+}
+.icomoon-Vest:before {
+  content: "\e914";
+}
+.icomoon-World:before {
+  content: "\e915";
+}
+.icomoon-Donate:before {
+  content: "\e916";
+}
+.icomoon-ribbon:before {
+  content: "\e917";
+}
+.icomoon-heart-2:before {
+  content: "\e918";
+}
+.icomoon-share-button:before {
+  content: "\e919";
+}
+.icomoon-share-1:before {
+  content: "\e91a";
+}
+.icomoon-user:before {
+  content: "\e91b";
+}
+.icomoon-clock:before {
+  content: "\e91c";
+}
+.icomoon-maps:before {
+  content: "\e91d";
+}
+.icomoon-calendar:before {
+  content: "\e91e";
+}
+.icomoon-send-email:before {
+  content: "\e91f";
+}
+.icomoon-fork:before {
+  content: "\e921";
+}
+.icomoon-healthcare:before {
+  content: "\e922";
+}
+.icomoon-water:before {
+  content: "\e923";
+}
+.icomoon-clean-water:before {
+  content: "\e924";
+}
+.icomoon-mushroom:before {
+  content: "\e925";
+}
+.icomoon-youtobe:before {
+  content: "\e926";
+}
+.icomoon-mail:before {
+  content: "\e928";
+}
+.icomoon-pin:before {
+  content: "\e929";
+}
+.icomoon-share:before {
+  content: "\e92b";
+}
+.icomoon-trusted:before {
+  content: "\e92c";
+}
+.icomoon-search:before {
+  content: "\e92d";
+}
+.icomoon-profile:before {
+  content: "\e92e";
+}
+.icomoon-comment-chat:before {
+  content: "\e92f";
+}
+.icomoon-chat:before {
+  content: "\e930";
+}
+.icomoon-file:before {
+  content: "\e931";
+}
+.icomoon-home:before {
+  content: "\e932";
+}
+.icomoon-hold-hand:before {
+  content: "\e933";
+}
+.icomoon-heart:before {
+  content: "\e934";
+}

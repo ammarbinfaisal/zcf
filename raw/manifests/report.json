@@ -1,0 +1,45 @@
+{
+  "generated_at_utc": "2026-02-12T11:26:16.115054+00:00",
+  "har_files": [
+    "zcfindia.org.har"
+  ],
+  "har_entries_total": 1536,
+  "har_pages_total": 11,
+  "primary_hosts": [
+    "zcfindia.org"
+  ],
+  "har_urls_total": 374,
+  "har_saved_body_records": 262,
+  "har_saved_body_files_unique": 243,
+  "har_missing_bodies": 1274,
+  "live_pages_crawled": 11,
+  "live_routes_found": 26,
+  "live_route_paths_found": 26,
+  "live_assets_discovered_same_host": 522,
+  "live_assets_skipped": 13,
+  "crawl_failures": 0,
+  "mime_counts": {
+    "image/webp": 150,
+    "text/javascript": 44,
+    "text/plain": 16,
+    "application/json+protobuf": 4,
+    "text/html": 31,
+    "application/json": 15,
+    "x-unknown": 3,
+    "application/javascript": 44,
+    "text/css": 577,
+    "application/x-javascript": 577,
+    "font/woff2": 49,
+    "application/x-font-ttf": 12,
+    "image/jpeg": 6,
+    "video/mp4": 7,
+    "image/svg+xml": 1
+  },
+  "status_counts": {
+    "200": 1509,
+    "204": 16,
+    "0": 3,
+    "206": 7,
+    "301": 1
+  }
+}
