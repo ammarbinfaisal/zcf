@@ -30,6 +30,20 @@ export const Pages: CollectionConfig = {
       relationTo: "media",
     },
     {
+      name: "imageUrls",
+      type: "array",
+      admin: {
+        description: "Ordered list of image URLs discovered on this page (for later media ingestion).",
+      },
+      fields: [
+        {
+          name: "url",
+          type: "text",
+          required: true,
+        },
+      ],
+    },
+    {
       name: "content",
       type: "richText",
       required: true,

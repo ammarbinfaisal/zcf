@@ -5,7 +5,6 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "claude:markdown": "bun src/scripts/claude_markdown.ts",
     "import:raw": "bun src/scripts/import_raw.ts"
   },
   "dependencies": {
