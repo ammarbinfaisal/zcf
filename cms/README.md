@@ -21,6 +21,16 @@ Prereqs:
 - Database configured (see `.env.example` for `DATABASE_URL` / optional `DATABASE_AUTH_TOKEN`)
 - (Recommended) download media into `raw/assets/live/**` so hero/gallery images can be imported
 
+Optional (for best rich text structure):
+- Generate Claude-cleaned Markdown first (requires `claude` CLI authentication/quota):
+
+```bash
+cd cms
+bun run claude:markdown
+```
+
+This writes `raw/claude/markdown.jsonl`. If present, `import:raw` prefers it for rich text.
+
 ```bash
 cd cms
 cp .env.example .env
