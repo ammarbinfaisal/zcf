@@ -72,6 +72,32 @@ const COMMON_SENTENCE_START_WORDS = new Set(
   ].map((s) => s.toLowerCase()),
 );
 
+const NAV_JUNK = new Set(
+  [
+    "Menu",
+    "Home",
+    "About Us",
+    "About",
+    "BBA",
+    "Zakat",
+    "What is Zakat & Nisab",
+    "Zakat Calculator",
+    "Gallery",
+    "Image Gallery",
+    "Video Gallery",
+    "Our Projects",
+    "Blogs",
+    "News",
+    "Contact",
+    "donate",
+    "Careers",
+    "Contact Us",
+    "Privacy Policy",
+    "Terms and Conditions",
+    "Become Volunteer",
+  ].map((s) => s.toLowerCase()),
+);
+
 function joinTokenLikeLines(tokens: string[]) {
   const rawTokens = tokens.map((t) => t.trim()).filter(Boolean);
 
@@ -127,6 +153,11 @@ function looksLikeUrlLine(line: string) {
   return /^https?:\/\/\S+$/i.test(line.trim());
 }
 
+function looksLikeEmailLine(line: string) {
+  const t = line.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
+
 function looksLikeHeadingLine(line: string) {
   const t = line.trim();
   if (!t) return false;
@@ -149,17 +180,73 @@ function looksLikeHeadingLine(line: string) {
   return startsCapital;
 }
 
-function paragraphizePlainText(text: string) {
-  const rawLines = (text || "").split(/\r?\n/g).map((l) => l.trim());
-  const lines = rawLines.filter(Boolean);
-  if (!lines.length) return [];
+function cleanLines(lines: string[]) {
+  const trimmed = lines.map((l) => l.trim()).filter(Boolean);
 
-  const paragraphs: string[] = [];
+  const isAlwaysJunk = (t: string) => {
+    const lower = t.toLowerCase();
+    if (lower.includes("© copyright")) return true;
+    if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") return true;
+    if (t === "Let’s Connect" || t === "Let's Connect") return true;
+    if (/^\d+$/.test(t)) return true;
+    if (t === "View More>>") return true;
+    if (t === "Your name" || t === "Your Phone" || t === "Your email") return true;
+    if (t === "Your message (optional)" || t === "Subject" || t === "Role" || t === "Other") return true;
+    if (looksLikeEmailLine(t)) return false;
+    if (looksLikeUrlLine(t)) return false;
+    // Strip out obvious finance/account blocks from the footer
+    if (lower.startsWith("a/c no:")) return true;
+    if (lower.startsWith("ifsc code:")) return true;
+    if (lower.startsWith("bank name:")) return true;
+    if (lower.startsWith("branch:")) return true;
+    return false;
+  };
+
+  // Only treat NAV_JUNK as junk in the initial "menu" portion of the page.
+  let contentStart = 0;
+  for (let i = 0; i < trimmed.length; i++) {
+    const t = trimmed[i]!;
+    if (t.toLowerCase().includes("© copyright")) break;
+    if (isAlwaysJunk(t)) continue;
+    if (NAV_JUNK.has(t.toLowerCase())) continue;
+    contentStart = i;
+    break;
+  }
+
+  const out: string[] = [];
+  let last = "";
+  for (let i = 0; i < trimmed.length; i++) {
+    const t = trimmed[i]!;
+    if (t.toLowerCase().includes("© copyright")) break;
+    if (isAlwaysJunk(t)) continue;
+    if (i < contentStart && NAV_JUNK.has(t.toLowerCase())) continue;
+    if (t.toLowerCase() === last.toLowerCase()) continue;
+    last = t;
+    out.push(t);
+  }
+
+  const footerCut = out.findIndex((l) => l.toLowerCase() === "quick links");
+  if (footerCut >= 0) return out.slice(0, footerCut);
+  return out;
+}
+
+type TextToken =
+  | { kind: "heading"; text: string }
+  | { kind: "url"; text: string }
+  | { kind: "email"; text: string }
+  | { kind: "text"; text: string };
+
+function tokenizePlainText(text: string) {
+  const rawLines = (text || "").split(/\r?\n/g).map((l) => l.trim());
+  const lines = cleanLines(rawLines);
+  if (!lines.length) return [] as TextToken[];
+
+  const tokens: TextToken[] = [];
   let buf: string[] = [];
 
   const flush = () => {
     const joined = joinTokenLikeLines(buf);
-    if (joined) paragraphs.push(joined);
+    if (joined) tokens.push({ kind: "text", text: joined });
     buf = [];
   };
 
@@ -185,13 +272,19 @@ function paragraphizePlainText(text: string) {
 
     if (looksLikeUrlLine(line)) {
       flush();
-      paragraphs.push(line);
+      tokens.push({ kind: "url", text: line });
+      continue;
+    }
+
+    if (looksLikeEmailLine(line)) {
+      flush();
+      tokens.push({ kind: "email", text: line });
       continue;
     }
 
     if (looksLikeHeadingLine(line)) {
       flush();
-      paragraphs.push(line);
+      if (!NAV_JUNK.has(line.toLowerCase())) tokens.push({ kind: "heading", text: line });
       continue;
     }
 
@@ -205,34 +298,170 @@ function paragraphizePlainText(text: string) {
     }
 
     flush();
-    paragraphs.push(line);
+    tokens.push({ kind: "text", text: line });
   }
 
   flush();
-  return paragraphs.filter(Boolean);
+  return tokens.filter((t) => t.text.trim());
 }
 
-function lexicalFromPlainText(text: string) {
-  const paragraphs = paragraphizePlainText(text);
+function randomNodeId() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const crypto = require("node:crypto") as typeof import("node:crypto");
+  return crypto.randomUUID();
+}
 
-  const children = paragraphs.map((p) => ({
+function textNode(text: string) {
+  return {
+    type: "text",
+    version: 1,
+    text,
+    format: 0,
+    detail: 0,
+    mode: "normal",
+    style: "",
+  };
+}
+
+function paragraphNode(children: Array<ReturnType<typeof textNode> | unknown>) {
+  return {
     type: "paragraph",
     version: 1,
     format: "",
     indent: 0,
     direction: "ltr",
-    children: [
-      {
-        type: "text",
-        version: 1,
-        text: p,
-        format: 0,
-        detail: 0,
-        mode: "normal",
-        style: "",
-      },
-    ],
-  }));
+    children,
+  };
+}
+
+function headingNode(text: string, tag: "h2" | "h3" = "h2") {
+  return {
+    type: "heading",
+    version: 1,
+    tag,
+    format: "",
+    indent: 0,
+    direction: "ltr",
+    children: [textNode(text)],
+  };
+}
+
+function linkNode(url: string, label: string) {
+  return {
+    type: "link",
+    version: 1,
+    format: "",
+    indent: 0,
+    direction: "ltr",
+    id: randomNodeId(),
+    fields: {
+      linkType: "custom",
+      newTab: true,
+      url,
+    },
+    children: [textNode(label)],
+  };
+}
+
+function uploadNode(relationTo: "media", value: string) {
+  return {
+    type: "upload",
+    version: 1,
+    format: "",
+    id: randomNodeId(),
+    relationTo,
+    value,
+    fields: {},
+  };
+}
+
+function listNode(items: string[]) {
+  return {
+    type: "list",
+    version: 1,
+    format: "",
+    indent: 0,
+    direction: "ltr",
+    listType: "bullet",
+    start: 1,
+    tag: "ul",
+    children: items.map((t) => ({
+      type: "listitem",
+      version: 1,
+      format: "",
+      indent: 0,
+      direction: "ltr",
+      value: 1,
+      checked: undefined,
+      children: [paragraphNode([textNode(t)])],
+    })),
+  };
+}
+
+function looksLikeBulletishLine(line: string) {
+  const t = line.trim();
+  if (!t) return false;
+  if (t.startsWith("-") || t.startsWith("•")) return true;
+  if (/^\d+\./.test(t)) return true;
+  if (/^(Support|Provide|Spread|Conserve|Develop)\b/i.test(t) && t.length <= 140) return true;
+  return false;
+}
+
+function lexicalFromPlainText(
+  text: string,
+  {
+    title,
+    leadingMediaId,
+  }: {
+    title?: string;
+    leadingMediaId?: string | null;
+  } = {},
+) {
+  const tokens = tokenizePlainText(text);
+
+  const children: any[] = [];
+  if (leadingMediaId) children.push(uploadNode("media", leadingMediaId));
+
+  let pendingList: string[] = [];
+  const flushList = () => {
+    if (pendingList.length >= 2) children.push(listNode(pendingList));
+    else if (pendingList.length === 1) children.push(paragraphNode([textNode(pendingList[0]!)]));
+    pendingList = [];
+  };
+
+  for (const tok of tokens) {
+    if (tok.kind === "heading") {
+      flushList();
+      if (title && tok.text.trim().toLowerCase() === title.trim().toLowerCase()) continue;
+      children.push(headingNode(tok.text, "h2"));
+      continue;
+    }
+
+    if (tok.kind === "url") {
+      flushList();
+      const href = tok.text.trim();
+      children.push(paragraphNode([linkNode(href, href)]));
+      continue;
+    }
+
+    if (tok.kind === "email") {
+      flushList();
+      const email = tok.text.trim();
+      children.push(paragraphNode([linkNode(`mailto:${email}`, email)]));
+      continue;
+    }
+
+    const line = tok.text.trim();
+    if (looksLikeBulletishLine(line)) {
+      pendingList.push(line.replace(/^[-•]\s*/, "").replace(/^\d+\.\s*/, "").trim());
+      continue;
+    }
+
+    flushList();
+    children.push(paragraphNode([textNode(line)]));
+  }
+
+  flushList();
 
   return {
     root: {
@@ -244,24 +473,7 @@ function lexicalFromPlainText(text: string) {
       children: children.length
         ? children
         : [
-            {
-              type: "paragraph",
-              version: 1,
-              format: "",
-              indent: 0,
-              direction: "ltr",
-              children: [
-                {
-                  type: "text",
-                  version: 1,
-                  text: "",
-                  format: 0,
-                  detail: 0,
-                  mode: "normal",
-                  style: "",
-                },
-              ],
-            },
+            paragraphNode([textNode("")]),
           ],
     },
   };
@@ -301,12 +513,26 @@ async function fileExists(filePath: string) {
 }
 
 async function resolveLocalAsset(url: string, repoRoot: string) {
-  const rel = urlToHarRelPath(url);
-  const har = path.join(repoRoot, "raw", "har_bodies", ...rel.split("/"));
-  if (await fileExists(har)) return { absPath: har, sourceUrl: url };
+  const stripSize = (u: string) => u.replace(/-\d+x\d+(?=\.[a-z0-9]+$)/i, "");
+  const stripScaled = (u: string) => u.replace(/-scaled(?=\.[a-z0-9]+$)/i, "");
 
-  const live = path.join(repoRoot, "raw", "assets", "live", ...rel.split("/"));
-  if (await fileExists(live)) return { absPath: live, sourceUrl: url };
+  const variants = (() => {
+    const out = [url];
+    const a = stripSize(url);
+    const b = stripScaled(url);
+    const c = stripScaled(a);
+    for (const v of [a, b, c]) if (v && v !== url) out.push(v);
+    return Array.from(new Set(out));
+  })();
+
+  for (const candidateUrl of variants) {
+    const rel = urlToHarRelPath(candidateUrl);
+    const har = path.join(repoRoot, "raw", "har_bodies", ...rel.split("/"));
+    if (await fileExists(har)) return { absPath: har, sourceUrl: candidateUrl };
+
+    const live = path.join(repoRoot, "raw", "assets", "live", ...rel.split("/"));
+    if (await fileExists(live)) return { absPath: live, sourceUrl: candidateUrl };
+  }
 
   return null;
 }
@@ -323,6 +549,17 @@ function mimeFromExt(filePath: string) {
   return "application/octet-stream";
 }
 
+function isLikelyContentImageUrl(url: string) {
+  const u = (url || "").toLowerCase();
+  if (!/\.(jpe?g|png|webp|gif|svg)(\?|$)/i.test(u)) return false;
+  if (u.includes("/demo/")) return false;
+  if (u.includes("logo")) return false;
+  if (u.includes("icon")) return false;
+  if (u.includes("elementor")) return false;
+  if (u.includes("/wp-content/plugins/")) return false;
+  return true;
+}
+
 let payload: Awaited<ReturnType<typeof getPayload>>;
 const mediaCache = new Map<string, string | null>();
 
@@ -335,23 +572,24 @@ async function ensureMediaFromUrl({
   alt: string;
   repoRoot: string;
 }): Promise<string | null> {
-  const cached = mediaCache.get(sourceUrl);
-  if (cached !== undefined) return cached;
-
   const local = await resolveLocalAsset(sourceUrl, repoRoot);
+  const canonicalSourceUrl = local?.sourceUrl || sourceUrl;
+
+  const cached = mediaCache.get(canonicalSourceUrl);
+  if (cached !== undefined) return cached;
   if (!local) {
-    mediaCache.set(sourceUrl, null);
+    mediaCache.set(canonicalSourceUrl, null);
     return null;
   }
 
   const existing = await payload.find({
     collection: "media",
-    where: { sourceUrl: { equals: sourceUrl } },
+    where: { sourceUrl: { equals: canonicalSourceUrl } },
     limit: 1,
   });
   const existingDoc = existing?.docs?.[0] as { id: string } | undefined;
   if (existingDoc?.id) {
-    mediaCache.set(sourceUrl, existingDoc.id);
+    mediaCache.set(canonicalSourceUrl, existingDoc.id);
     return existingDoc.id;
   }
 
@@ -360,14 +598,14 @@ async function ensureMediaFromUrl({
       collection: "media",
       data: {
         alt,
-        sourceUrl,
+        sourceUrl: canonicalSourceUrl,
       },
       filePath: local.absPath,
     })) as unknown as { id: string };
-    mediaCache.set(sourceUrl, created.id);
+    mediaCache.set(canonicalSourceUrl, created.id);
     return created.id;
   } catch {
-    mediaCache.set(sourceUrl, null);
+    mediaCache.set(canonicalSourceUrl, null);
     return null;
   }
 }
@@ -389,6 +627,7 @@ async function ensureMediaLibraryFromRecord({
     if (typeof u !== "string") continue;
     const t = u.trim();
     if (!t.startsWith("http")) continue;
+    if (!isLikelyContentImageUrl(t)) continue;
     if (seen.has(t)) continue;
     seen.add(t);
     uniq.push(t);
@@ -403,12 +642,16 @@ async function ensureMediaLibraryFromRecord({
 async function upsertPage(rec: ScrapyPage, repoRoot: string) {
   const pagePath = normalizePathname(rec.path);
   const title = (rec.title || "").replace(/\s+-\s+Zakat\s*&\s*Charitable\s*Foundation\s*$/i, "").trim() || "Page";
-  const content = lexicalFromPlainText(rec.content_text || "");
 
-  const heroUrl = rec.primary_image || (rec.images?.[0] ?? null);
+  const heroUrl =
+    [rec.primary_image, ...(rec.images || [])]
+      .filter((u): u is string => typeof u === "string" && u.startsWith("http"))
+      .find(isLikelyContentImageUrl) ?? null;
   const heroMedia = heroUrl
     ? await ensureMediaFromUrl({ sourceUrl: heroUrl, alt: title, repoRoot })
     : null;
+
+  const content = lexicalFromPlainText(rec.content_text || "", { title, leadingMediaId: heroMedia });
 
   // Retain all scraped media URLs (that exist locally) in the Media library.
   await ensureMediaLibraryFromRecord({ urls: rec.images || [], alt: title, repoRoot });
@@ -442,12 +685,16 @@ async function upsertPage(rec: ScrapyPage, repoRoot: string) {
 async function upsertPost(rec: ScrapyPage, repoRoot: string) {
   const slug = slugFromPathname(rec.path);
   const title = (rec.title || "").replace(/\s+-\s+Zakat\s*&\s*Charitable\s*Foundation\s*$/i, "").trim() || slug;
-  const content = lexicalFromPlainText(rec.content_text || "");
 
-  const featuredUrl = rec.primary_image || (rec.images?.[0] ?? null);
+  const featuredUrl =
+    [rec.primary_image, ...(rec.images || [])]
+      .filter((u): u is string => typeof u === "string" && u.startsWith("http"))
+      .find(isLikelyContentImageUrl) ?? null;
   const featuredImage = featuredUrl
     ? await ensureMediaFromUrl({ sourceUrl: featuredUrl, alt: title, repoRoot })
     : null;
+
+  const content = lexicalFromPlainText(rec.content_text || "", { title, leadingMediaId: featuredImage });
 
   // Retain all scraped media URLs (that exist locally) in the Media library.
   await ensureMediaLibraryFromRecord({ urls: rec.images || [], alt: title, repoRoot });

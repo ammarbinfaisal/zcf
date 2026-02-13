@@ -39,6 +39,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: site.name,
       description: page.description || site.tagline,
       url: "/",
+      images: [{ url: "/og?path=/", width: 1200, height: 630, alt: site.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: site.name,
+      description: page.description || site.tagline,
+      images: ["/og?path=/"],
     },
   };
 }
