@@ -10,12 +10,12 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-12">
         <div className="grid gap-10 md:grid-cols-3">
           <div className="space-y-3">
-            <div className="text-sm font-semibold text-[color:var(--brand-olive)]">{site.name}</div>
+            <div className="text-sm font-semibold text-foreground">{site.name}</div>
             <p className="text-sm text-muted-foreground">{site.tagline}</p>
           </div>
 
           <div className="space-y-3">
-            <div className="text-sm font-semibold text-[color:var(--brand-olive)]">Quick Links</div>
+            <div className="text-sm font-semibold text-foreground">Quick Links</div>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {primaryNav.map((item) => (
                 <Link
@@ -42,7 +42,7 @@ export function SiteFooter() {
           </div>
 
           <div className="space-y-3">
-            <div className="text-sm font-semibold text-[color:var(--brand-olive)]">Contact</div>
+            <div className="text-sm font-semibold text-foreground">Contact</div>
             <div className="text-sm text-muted-foreground">zakatcharitablefoundation@gmail.com</div>
             <div className="text-sm text-muted-foreground">+91 85287 78878</div>
           </div>

@@ -210,42 +210,42 @@ export default async function HomePage() {
                   {
                     title: "Rehabilitation support",
                     description: "Targeted help for families impacted by crises, built around recovery and stability.",
-                    icon: <ShieldCheck className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <ShieldCheck className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Dignified livelihoods",
                     description: "Enable self-reliance through tools, guidance, and community-backed pathways.",
-                    icon: <BriefcaseBusiness className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <BriefcaseBusiness className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Scholarships for education",
                     description: "Support students with resources that keep learning consistent and future-focused.",
-                    icon: <GraduationCap className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <GraduationCap className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Skill development workshops",
                     description: "Hands-on training designed to increase employability and income stability.",
-                    icon: <Users className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <Users className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Computer and language classes",
                     description: "Digital literacy and communication skills to widen opportunities.",
-                    icon: <Laptop className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <Laptop className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Meals and food packets",
                     description: "Timely food support for people in urgent need.",
-                    icon: <Soup className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <Soup className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Women empowerment",
                     description: "Support women-led initiatives and capacity building.",
-                    icon: <HandHeart className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <HandHeart className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                   {
                     title: "Protect the environment",
                     description: "Conserve and protect natural resources through responsible community action.",
-                    icon: <Leaf className="h-4 w-4 text-[color:var(--brand-olive)]" />,
+                    icon: <Leaf className="h-4 w-4 text-[color:var(--brand-ochre)]" />,
                   },
                 ] as const
               ).map((item, idx) => (
