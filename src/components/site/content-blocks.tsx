@@ -17,6 +17,16 @@ export function ContentBlocks({ blocks }: { blocks: PageContent["blocks"] }) {
           );
         }
 
+        if (b.type === "a") {
+          return (
+            <p key={idx} className="text-pretty text-sm leading-6 text-foreground/90 sm:text-base sm:leading-7">
+              <a href={b.href} className="underline underline-offset-4" rel="noreferrer" target="_blank">
+                {b.text}
+              </a>
+            </p>
+          );
+        }
+
         if (b.type === "ul") {
           return (
             <ul key={idx} className="list-disc space-y-2 pl-5 text-sm leading-6 sm:text-base">
