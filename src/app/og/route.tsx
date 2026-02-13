@@ -47,20 +47,15 @@ export async function GET(req: NextRequest) {
           background: "linear-gradient(135deg, #fbf6ea 0%, #ffffff 70%)",
         }}
       >
-        <div
-          style={{
-            width: 220,
-            height: 220,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 48,
-            border: "6px solid rgba(85, 107, 47, 0.18)",
-            background: "rgba(255, 255, 255, 0.75)",
-          }}
-        >
+        <div style={{ width: 260, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logo as unknown as any} width={170} height={170} alt="" />
+          <img
+            src={logo as unknown as any}
+            width={260}
+            height={260}
+            alt=""
+            style={{ objectFit: "contain" }}
+          />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1 }}>
@@ -79,4 +74,3 @@ export async function GET(req: NextRequest) {
     OG_SIZE,
   );
 }
-
