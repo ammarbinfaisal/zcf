@@ -5,7 +5,7 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "import:raw": "tsx src/scripts/import_raw.ts"
+    "import:raw": "bun src/scripts/import_raw.ts"
   },
   "dependencies": {
     "@payloadcms/db-sqlite": "3.76.1",

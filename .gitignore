@@ -54,3 +54,6 @@ __pycache__/
 
 # captures / raw exports
 *.har
+
+# payload uploads
+cms/media/

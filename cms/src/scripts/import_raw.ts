@@ -1,8 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createRequire } from "node:module";
 
-import config from "@payload-config";
-import { getPayload } from "payload";
+import config from "../../payload.config";
+
+// NOTE: Payload's ESM build currently pulls in `loadEnv` which assumes a default export
+// from `@next/env`. In Next canary, `@next/env` is `__esModule` without a `default`,
+// which crashes when imported as default. Using CJS `require` avoids that path.
+// This script is Node-only.
+const require = createRequire(import.meta.url);
+const { getPayload } = require("payload") as typeof import("payload");
 
 type ScrapyPage = {
   url: string;
