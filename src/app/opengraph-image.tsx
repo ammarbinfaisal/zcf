@@ -18,7 +18,7 @@ export default function OpenGraphImage() {
           height: "100%",
           display: "flex",
           alignItems: "stretch",
-          justifyContent: "stretch",
+          justifyContent: "flex-start",
           padding: 64,
           backgroundColor: "#faf3e0",
           backgroundImage: "linear-gradient(135deg, #0ea5e9 0%, #1f2937 100%)",
