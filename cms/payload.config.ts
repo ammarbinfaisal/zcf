@@ -17,8 +17,13 @@ export default buildConfig({
     client: {
       // Local dev default. For Turso, set DATABASE_URL to your `libsql://...` URL
       // and provide DATABASE_AUTH_TOKEN.
-      url: process.env.DATABASE_URL || 'file:./payload.db',
-      authToken: process.env.DATABASE_AUTH_TOKEN,
+      // In production we also support Turso's env names:
+      //   TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
+      url:
+        process.env.TURSO_DATABASE_URL ||
+        process.env.DATABASE_URL ||
+        'file:./payload.db',
+      authToken: process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN,
     },
   }),
   admin: {
