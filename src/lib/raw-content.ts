@@ -24,6 +24,7 @@ export type PageContent = {
   blocks: Array<
     | { type: "h2"; text: string }
     | { type: "p"; text: string }
+    | { type: "a"; href: string; text: string }
     | { type: "ul"; items: string[] }
   >;
   source: "live" | "fallback";
@@ -82,41 +83,58 @@ const getHarBodyUrlToFile = cache(async () => {
 
 export async function localAssetSrcFromUrl(url: string) {
   const normalized = normalizeUrl(url);
-  const map = await getHarBodyUrlToFile();
-  const rec = map.get(normalized);
 
-  // Prefer exact URL match from HAR manifest.
-  if (rec?.file) {
-    const abs = path.join(process.cwd(), rec.file);
+  const variants = (() => {
+    const out = [normalized];
+    const stripSize = (u: string) => u.replace(/-\d+x\d+(?=\.[a-z0-9]+$)/i, "");
+    const stripScaled = (u: string) => u.replace(/-scaled(?=\.[a-z0-9]+$)/i, "");
+    const a = stripSize(normalized);
+    const b = stripScaled(normalized);
+    const c = stripScaled(a);
+    for (const v of [a, b, c]) if (v && v !== normalized) out.push(v);
+    return Array.from(new Set(out));
+  })();
+
+  const map = await getHarBodyUrlToFile();
+
+  for (const candidateUrl of variants) {
+    const rec = map.get(candidateUrl);
+
+    // Prefer exact URL match from HAR manifest.
+    if (rec?.file) {
+      const abs = path.join(process.cwd(), rec.file);
+      try {
+        await fs.access(abs);
+        const rel = path.relative(path.join(process.cwd(), "raw", "har_bodies"), abs);
+        const relPosix = rel.split(path.sep).join("/");
+        return `/raw-asset/har/${relPosix}`;
+      } catch {
+        // fall through
+      }
+    }
+
+    // Fallback: derive expected path.
     try {
+      const rel = urlToHarRelPath(candidateUrl);
+      const abs = path.join(process.cwd(), "raw", "har_bodies", ...rel.split("/"));
       await fs.access(abs);
-      const rel = path.relative(path.join(process.cwd(), "raw", "har_bodies"), abs);
-      const relPosix = rel.split(path.sep).join("/");
-      return `/raw-asset/har/${relPosix}`;
+      return `/raw-asset/har/${rel}`;
+    } catch {
+      // fall through
+    }
+
+    // Fallback: downloaded live assets bucket.
+    try {
+      const rel = urlToHarRelPath(candidateUrl);
+      const abs = path.join(process.cwd(), "raw", "assets", "live", ...rel.split("/"));
+      await fs.access(abs);
+      return `/raw-asset/live/${rel}`;
     } catch {
       // fall through
     }
   }
 
-  // Fallback: derive expected path.
-  try {
-    const rel = urlToHarRelPath(normalized);
-    const abs = path.join(process.cwd(), "raw", "har_bodies", ...rel.split("/"));
-    await fs.access(abs);
-    return `/raw-asset/har/${rel}`;
-  } catch {
-    // fall through
-  }
-
-  // Fallback: downloaded live assets bucket.
-  try {
-    const rel = urlToHarRelPath(normalized);
-    const abs = path.join(process.cwd(), "raw", "assets", "live", ...rel.split("/"));
-    await fs.access(abs);
-    return `/raw-asset/live/${rel}`;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 function firstMetaContent(html: string, matcher: RegExp) {
@@ -154,6 +172,17 @@ function extractHeroCandidates(html: string) {
   if (fromImg) candidates.push(fromImg);
 
   return Array.from(new Set(candidates));
+}
+
+function isLikelyContentImageUrl(url: string) {
+  const u = url.toLowerCase();
+  if (!/\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)) return false;
+  if (u.includes("/demo/")) return false;
+  if (u.includes("logo")) return false;
+  if (u.includes("icon")) return false;
+  if (u.includes("elementor")) return false;
+  if (u.includes("/wp-content/plugins/")) return false;
+  return true;
 }
 
 function normalizePathname(input: string) {
@@ -240,11 +269,9 @@ function looksLikeHeadingLine(line: string) {
 
 function isLikelyHeading(line: string) {
   const t = line.trim();
-  if (t.length < 4) return false;
-  if (/^\d+$/.test(t)) return false;
-  const hasLetters = /[A-Za-z]/.test(t);
-  const isAllCaps = t === t.toUpperCase();
-  return hasLetters && isAllCaps;
+  if (!looksLikeHeadingLine(t)) return false;
+  if (NAV_JUNK.has(t.toLowerCase())) return false;
+  return true;
 }
 
 function cleanLines(lines: string[]) {
@@ -253,8 +280,11 @@ function cleanLines(lines: string[]) {
   const isAlwaysJunk = (t: string) => {
     if (t.toLowerCase().includes("© copyright")) return true;
     if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") return true;
+    if (t === "Let’s Connect" || t === "Let's Connect") return true;
     if (/^\d+$/.test(t)) return true;
     if (t === "View More>>") return true;
+    if (t === "Your name" || t === "Your Phone" || t === "Your email") return true;
+    if (t === "Your message (optional)" || t === "Subject" || t === "Role" || t === "Other") return true;
     return false;
   };
 
@@ -422,6 +452,8 @@ function linesToBlocks(lines: string[]) {
   const blocks: PageContent["blocks"] = [];
   let pendingList: string[] = [];
 
+  const looksLikeUrlLine = (line: string) => /^https?:\/\/\S+$/i.test(line.trim());
+
   const flushList = () => {
     if (pendingList.length >= 2) blocks.push({ type: "ul", items: pendingList });
     else if (pendingList.length === 1) blocks.push({ type: "p", text: pendingList[0] });
@@ -429,6 +461,12 @@ function linesToBlocks(lines: string[]) {
   };
 
   for (const l of lines) {
+    if (looksLikeUrlLine(l)) {
+      flushList();
+      blocks.push({ type: "a", href: l.trim(), text: l.trim() });
+      continue;
+    }
+
     if (isLikelyHeading(l)) {
       flushList();
       blocks.push({ type: "h2", text: l });
@@ -470,6 +508,7 @@ export async function getPageContentByPathname(pathname: string): Promise<PageCo
       const absHtml = path.join(process.cwd(), rec.html_file);
       const html = await fs.readFile(absHtml, "utf8");
       for (const candidate of extractHeroCandidates(html)) {
+        if (!isLikelyContentImageUrl(candidate)) continue;
         const localSrc = await localAssetSrcFromUrl(candidate);
         if (localSrc) {
           hero = { src: localSrc, alt: "" };
