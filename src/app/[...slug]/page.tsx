@@ -55,7 +55,7 @@ export default async function SlugPage({
 
   const page = await getPageContentByPathname(pathname);
   return (
-    <PageShell title={page.title} description={page.description}>
+    <PageShell title={page.title} description={page.description} hero={page.hero}>
       <Card>
         <CardContent className="p-6 sm:p-8">
           <ContentBlocks blocks={page.blocks} />

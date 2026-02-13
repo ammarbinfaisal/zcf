@@ -1,6 +1,7 @@
 import { cache } from "react";
 import fs from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 
 type LivePageManifestRecord = {
   url: string;
@@ -9,10 +10,17 @@ type LivePageManifestRecord = {
   text_chars: number;
 };
 
+type HarBodyManifestRecord = {
+  url: string;
+  mime: string;
+  file: string;
+};
+
 export type PageContent = {
   pathname: string;
   title: string;
   description: string;
+  hero?: { src: string; alt?: string };
   blocks: Array<
     | { type: "h2"; text: string }
     | { type: "p"; text: string }
@@ -22,6 +30,131 @@ export type PageContent = {
 };
 
 const RAW_ROOT = path.join(process.cwd(), "raw");
+
+function normalizeUrl(input: string) {
+  try {
+    const u = new URL(input);
+    u.hash = "";
+    if (!u.protocol) u.protocol = "https:";
+    return u.toString();
+  } catch {
+    return input.trim();
+  }
+}
+
+function sha1Hex8(input: string) {
+  return crypto.createHash("sha1").update(input).digest("hex").slice(0, 8);
+}
+
+function urlToHarRelPath(url: string) {
+  const u = new URL(url);
+  const host = u.host.toLowerCase();
+  let pathname = u.pathname || "/";
+  if (pathname.endsWith("/")) pathname = `${pathname}index`;
+  let rel = pathname.replace(/^\//, "");
+
+  // Match `extract_har_to_raw.py` query hashing: `<stem>__q_<hash><suffix>`
+  if (u.search && rel) {
+    const qHash = sha1Hex8(u.search.replace(/^\?/, ""));
+    const parsed = path.posix.parse(rel);
+    const stem = parsed.name || "index";
+    const suffix = parsed.ext || "";
+    rel = path.posix.join(parsed.dir, `${stem}__q_${qHash}${suffix}`);
+  }
+
+  return path.posix.join(host, rel);
+}
+
+const getHarBodyUrlToFile = cache(async () => {
+  const manifestPath = path.join(RAW_ROOT, "manifests", "har_bodies.json");
+  try {
+    const records = await readJson<HarBodyManifestRecord[]>(manifestPath);
+    const map = new Map<string, HarBodyManifestRecord>();
+    for (const r of records) {
+      if (!r?.url || !r?.file) continue;
+      map.set(normalizeUrl(r.url), r);
+    }
+    return map;
+  } catch {
+    return new Map<string, HarBodyManifestRecord>();
+  }
+});
+
+async function localAssetSrcFromUrl(url: string) {
+  const normalized = normalizeUrl(url);
+  const map = await getHarBodyUrlToFile();
+  const rec = map.get(normalized);
+
+  // Prefer exact URL match from HAR manifest.
+  if (rec?.file) {
+    const abs = path.join(process.cwd(), rec.file);
+    try {
+      await fs.access(abs);
+      const rel = path.relative(path.join(process.cwd(), "raw", "har_bodies"), abs);
+      const relPosix = rel.split(path.sep).join("/");
+      return `/raw-asset/har/${relPosix}`;
+    } catch {
+      // fall through
+    }
+  }
+
+  // Fallback: derive expected path.
+  try {
+    const rel = urlToHarRelPath(normalized);
+    const abs = path.join(process.cwd(), "raw", "har_bodies", ...rel.split("/"));
+    await fs.access(abs);
+    return `/raw-asset/har/${rel}`;
+  } catch {
+    // fall through
+  }
+
+  // Fallback: downloaded live assets bucket.
+  try {
+    const rel = urlToHarRelPath(normalized);
+    const abs = path.join(process.cwd(), "raw", "assets", "live", ...rel.split("/"));
+    await fs.access(abs);
+    return `/raw-asset/live/${rel}`;
+  } catch {
+    return null;
+  }
+}
+
+function firstMetaContent(html: string, matcher: RegExp) {
+  const m = html.match(matcher);
+  const raw = m?.[1]?.trim();
+  return raw || null;
+}
+
+function extractHeroCandidates(html: string) {
+  const candidates: string[] = [];
+
+  const fromMeta =
+    firstMetaContent(html, /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i) ||
+    firstMetaContent(html, /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  if (fromMeta) candidates.push(fromMeta);
+
+  // AIOSEO often embeds the primary image only in JSON-LD.
+  const jsonLdMatches = html.matchAll(
+    /"@type"\s*:\s*"ImageObject"[^}]*?"url"\s*:\s*"([^"]+)"/gi,
+  );
+  for (const m of jsonLdMatches) {
+    const u = m?.[1]?.trim();
+    if (u) candidates.push(u);
+  }
+
+  // Also try a plain image URL in JSON-LD objects.
+  const imageStringMatches = html.matchAll(/"image"\s*:\s*"([^"]+)"/gi);
+  for (const m of imageStringMatches) {
+    const u = m?.[1]?.trim();
+    if (u && u.startsWith("http")) candidates.push(u);
+  }
+
+  // Last resort: first <img src="..."> on the page.
+  const fromImg = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)?.[1]?.trim();
+  if (fromImg) candidates.push(fromImg);
+
+  return Array.from(new Set(candidates));
+}
 
 function normalizePathname(input: string) {
   if (!input) return "/";
@@ -198,12 +331,28 @@ export async function getPageContentByPathname(pathname: string): Promise<PageCo
     const rawLines = txt.split(/\r?\n/g);
     const cleaned = cleanLines(rawLines);
 
+    let hero: PageContent["hero"];
+    try {
+      const absHtml = path.join(process.cwd(), rec.html_file);
+      const html = await fs.readFile(absHtml, "utf8");
+      for (const candidate of extractHeroCandidates(html)) {
+        const localSrc = await localAssetSrcFromUrl(candidate);
+        if (localSrc) {
+          hero = { src: localSrc, alt: "" };
+          break;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const title = guessTitleFromFirstLine(rawLines[0] ?? "", normalized);
     const description = buildDescriptionFromLines(cleaned);
     return {
       pathname: normalized,
       title,
       description,
+      hero,
       blocks: linesToBlocks(cleaned.slice(0, 120)),
       source: "live",
     };
