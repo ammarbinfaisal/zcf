@@ -87,6 +87,66 @@ def pick_main_container(soup: BeautifulSoup):
     return soup.body
 
 
+def extract_content_text(container) -> str | None:
+    if container is None:
+        return None
+
+    # Strip non-content tags to reduce noise.
+    for tag in container.select("script,style,noscript"):
+        tag.decompose()
+
+    # Prefer block-level structure so we don't end up with 1-word-per-line
+    # when the page uses many nested spans/divs.
+    blocks: list[str] = []
+    for el in container.find_all(["h1", "h2", "h3", "h4", "p", "li"]):
+        txt = el.get_text(" ", strip=True)
+        if not txt:
+            continue
+        if blocks and blocks[-1].lower() == txt.lower():
+            continue
+        blocks.append(txt)
+
+    if blocks:
+        return "\n".join(blocks)
+
+    # Fallback: single-line plain text.
+    txt = container.get_text(" ", strip=True)
+    return txt or None
+
+
+def extract_image_urls(soup: BeautifulSoup, base_url: str) -> list[str]:
+    urls: list[str] = []
+
+    def from_srcset(raw: str) -> str | None:
+        # Pick the last candidate, which is usually the largest.
+        parts = [p.strip() for p in raw.split(",") if p.strip()]
+        if not parts:
+            return None
+        last = parts[-1]
+        return last.split()[0] if last else None
+
+    for img in soup.select("img"):
+        candidates: list[str] = []
+        for attr in ["src", "data-src", "data-lazy-src", "data-original"]:
+            v = img.get(attr)
+            if isinstance(v, str) and v.strip():
+                candidates.append(v.strip())
+
+        for attr in ["srcset", "data-srcset", "data-lazy-srcset"]:
+            v = img.get(attr)
+            if isinstance(v, str) and v.strip():
+                u = from_srcset(v.strip())
+                if u:
+                    candidates.append(u)
+
+        for src in candidates:
+            abs_url = urljoin(base_url, src)
+            if abs_url.startswith("http"):
+                urls.append(abs_url)
+
+    return urls
+
+
 def extract_json_ld(soup: BeautifulSoup) -> list[object]:
     out: list[object] = []
     for s in soup.select('script[type="application/ld+json"]'):
@@ -172,7 +232,17 @@ class ZCFIndiaSpider(scrapy.Spider):
 
     custom_settings = {
         "ROBOTSTXT_OBEY": True,
-        "USER_AGENT": "Mozilla/5.0 (compatible; zcf-scrapy-crawler/1.0)",
+        # Use a normal browser UA + headers; the site is protected by a JS challenge and
+        # tends to serve 403s to obvious bot signatures.
+        "USER_AGENT": (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "DEFAULT_REQUEST_HEADERS": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Upgrade-Insecure-Requests": "1",
+        },
         "DOWNLOAD_DELAY": 0.2,
         "CONCURRENT_REQUESTS": 8,
         "AUTOTHROTTLE_ENABLED": True,
@@ -210,16 +280,10 @@ class ZCFIndiaSpider(scrapy.Spider):
         content_text = None
         if container is not None:
             content_html = str(container)
-            content_text = container.get_text("\n", strip=True) or None
+            content_text = extract_content_text(container)
 
         images: list[str] = []
-        for img in soup.select("img"):
-            src = img.get("src")
-            if not src:
-                continue
-            abs_url = urljoin(base, src)
-            if abs_url.startswith("http"):
-                images.append(abs_url)
+        images.extend(extract_image_urls(soup, base))
         if primary_img:
             images.insert(0, primary_img)
         # de-dupe keep order

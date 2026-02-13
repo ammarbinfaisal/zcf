@@ -41,7 +41,7 @@ export function SiteHeader() {
                 <NavigationMenuLink asChild>
                   <Link
                     href={item.href}
-                    className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground"
+                    className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent/60 hover:text-foreground"
                   >
                     {item.label}
                   </Link>
