@@ -19,6 +19,12 @@ python -m scrapy runspider tools/zcfindia_crawl/zcfindia_spider.py -O raw/scrapy
 python tools/zcfindia_crawl/analyze.py raw/scrapy/pages.jsonl raw/scrapy/report.json
 ```
 
+## Download media (optional, but recommended for gallery + hero images)
+
+```bash
+python tools/zcfindia_crawl/download_assets.py raw/scrapy/pages.jsonl --out raw/assets/live --limit 5000
+```
+
 Outputs:
 - `raw/scrapy/pages.jsonl`
 - `raw/scrapy/report.json`

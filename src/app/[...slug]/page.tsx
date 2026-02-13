@@ -13,8 +13,9 @@ export const dynamicParams = false;
 
 export async function generateStaticParams() {
   const routes = await getAllRoutePaths();
+  const reserved = new Set(["/image-gallery/", "/video-gallery/"]);
   return routes
-    .filter((p) => p !== "/")
+    .filter((p) => p !== "/" && !reserved.has(p))
     .map((p) => p.replace(/^\//, "").replace(/\/$/, ""))
     .map((p) => ({ slug: p.split("/").filter(Boolean) }));
 }
