@@ -21,16 +21,6 @@ Prereqs:
 - Database configured (see `.env.example` for `DATABASE_URL` / optional `DATABASE_AUTH_TOKEN`)
 - (Recommended) download media into `raw/assets/live/**` so hero/gallery images can be imported
 
-Optional (for best rich text structure):
-- Generate Claude-cleaned Markdown first (requires `claude` CLI authentication/quota):
-
-```bash
-cd cms
-bun run claude:markdown
-```
-
-This writes `raw/claude/markdown.jsonl`. If present, `import:raw` prefers it for rich text.
-
 ```bash
 cd cms
 cp .env.example .env
@@ -38,9 +28,8 @@ bun run import:raw
 ```
 
 Notes:
-- Media import only uploads assets that exist locally in `raw/har_bodies/**` or `raw/assets/live/**`.
-- If some hero/header images 404 on the live site, they won't be downloadable; the importer will skip them.
-- If a scraped page ends up with 1-word-per-line text, the importer collapses it into normal paragraphs, but re-scraping with the updated spider is best.
+- Rich text content is generated semantically from scraped HTML (headings/bold/lists/links).
+- Image URLs found in the HTML are stored in `imageUrls` (ordered) for later media ingestion (no image downloading during import).
 
 Then open:
 - Admin: `http://localhost:3001/admin`
