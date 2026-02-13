@@ -1,0 +1,118 @@
+{
+  "pages_total": 30,
+  "kinds": {
+    "home": 2,
+    "page": 12,
+    "post": 4,
+    "unknown": 4,
+    "category": 2,
+    "archive_month": 4,
+    "author": 2
+  },
+  "path_prefixes": {
+    "2023": 3,
+    "/": 2,
+    "category": 2,
+    "2024": 2,
+    "author": 2,
+    "2025": 2,
+    "become-a-volunteer": 1,
+    "terms-and-conditions": 1,
+    "privacy-policy": 1,
+    "an-important-and-interactive-meeting-on-collective-system-of-zakat": 1,
+    "zcf-participation-at-the-amp-national-ngo-conference-lucknow": 1,
+    "donation": 1,
+    "contact": 1,
+    "news": 1,
+    "our-projects": 1,
+    "video-gallery": 1,
+    "image-gallery": 1,
+    "zakat-calculator": 1,
+    "talk-entrepreneurship-awareness": 1,
+    "importance-of-zakat-and-its-social-obligation": 1,
+    "zakat-nisab": 1,
+    "brainy-bright-academy": 1,
+    "about": 1
+  },
+  "examples": {
+    "home": [
+      "https://zcfindia.org/",
+      "https://zcfindia.org/"
+    ],
+    "page": [
+      "https://zcfindia.org/become-a-volunteer/",
+      "https://zcfindia.org/terms-and-conditions/",
+      "https://zcfindia.org/privacy-policy/",
+      "https://zcfindia.org/donation/",
+      "https://zcfindia.org/contact/"
+    ],
+    "post": [
+      "https://zcfindia.org/an-important-and-interactive-meeting-on-collective-system-of-zakat/",
+      "https://zcfindia.org/zcf-participation-at-the-amp-national-ngo-conference-lucknow/",
+      "https://zcfindia.org/talk-entrepreneurship-awareness/",
+      "https://zcfindia.org/importance-of-zakat-and-its-social-obligation/"
+    ],
+    "unknown": [
+      "https://zcfindia.org/news/",
+      "https://zcfindia.org/2023/",
+      "https://zcfindia.org/2024/",
+      "https://zcfindia.org/2025/"
+    ],
+    "category": [
+      "https://zcfindia.org/category/education/",
+      "https://zcfindia.org/category/news/"
+    ],
+    "archive_month": [
+      "https://zcfindia.org/2023/02/",
+      "https://zcfindia.org/2023/03/",
+      "https://zcfindia.org/2024/03/",
+      "https://zcfindia.org/2025/11/"
+    ],
+    "author": [
+      "https://zcfindia.org/author/by-dr-safia-amir/",
+      "https://zcfindia.org/author/zakat/"
+    ]
+  },
+  "posts_total": 4,
+  "pages_total_including_home": 14,
+  "notes": [
+    "This site appears to be WordPress (Elementor + AIOSEO JSON-LD).",
+    "Most primary media is embedded in JSON-LD ImageObject rather than og:image meta tags.",
+    "Blog posts are standard WP single-post pages; category/author/archive listings are separate routes."
+  ],
+  "cms_mapping": {
+    "pages": {
+      "collection": "pages",
+      "key": "slug",
+      "fields": [
+        "title",
+        "slug",
+        "heroMedia",
+        "contentRichText",
+        "seo"
+      ]
+    },
+    "posts": {
+      "collection": "posts",
+      "key": "slug",
+      "fields": [
+        "title",
+        "slug",
+        "featuredImage",
+        "publishedAt",
+        "excerpt",
+        "contentRichText",
+        "seo"
+      ]
+    },
+    "media": {
+      "collection": "media",
+      "fields": [
+        "file",
+        "alt",
+        "caption",
+        "credit"
+      ]
+    }
+  }
+}
