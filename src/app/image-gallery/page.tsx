@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { PageShell } from "@/components/site/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
+import { Carousel_001 } from "@/components/ui/skiper-ui/skiper47";
 import { getPageContentByPathname, localAssetSrcFromUrl } from "@/lib/raw-content";
 import { getScrapyPageByPathname } from "@/lib/scrapy";
 
@@ -46,12 +47,29 @@ export default async function ImageGalleryPage() {
   const local = mapped.filter((m): m is { url: string; src: string } => Boolean(m.src));
   const missingCount = mapped.length - local.length;
 
+  const carouselImages = (publicImages.length
+    ? publicImages.map((name) => ({ src: `/gallery/${encodeURIComponent(name)}`, alt: "" }))
+    : local.map((img) => ({ src: img.src, alt: "" }))
+  ).slice(0, 12);
+
   return (
     <PageShell title={page.title || "Image Gallery"} description={page.description} hero={page.hero}>
       <Card>
         <CardContent className="p-6 sm:p-8">
+          {carouselImages.length ? (
+            <div className="mb-8 sm:hidden">
+              <Carousel_001
+                images={carouselImages}
+                className="mx-auto max-w-md"
+                showPagination
+                loop
+                spaceBetween={18}
+              />
+            </div>
+          ) : null}
+
           {publicImages.length ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
               {publicImages.map((name) => (
                 <div key={name} className="overflow-hidden rounded-xl border bg-card">
                   <div className="relative aspect-[4/3] w-full">
@@ -67,7 +85,7 @@ export default async function ImageGalleryPage() {
               ))}
             </div>
           ) : local.length ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
               {local.map((img) => (
                 <div
                   key={img.url}
