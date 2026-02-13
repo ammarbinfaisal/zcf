@@ -39,13 +39,183 @@ function slugFromPathname(p: string) {
   return normalized.replace(/^\//, "").replace(/\/$/, "");
 }
 
-function lexicalFromPlainText(text: string) {
-  const lines = (text || "")
-    .split(/\r?\n/g)
-    .map((l) => l.trim())
-    .filter(Boolean);
+const COMMON_SENTENCE_START_WORDS = new Set(
+  [
+    "A",
+    "An",
+    "And",
+    "At",
+    "Because",
+    "But",
+    "By",
+    "For",
+    "From",
+    "If",
+    "In",
+    "It",
+    "On",
+    "Or",
+    "The",
+    "These",
+    "This",
+    "Those",
+    "To",
+    "We",
+    "When",
+    "Where",
+    "Which",
+    "While",
+    "Who",
+    "Why",
+    "You",
+    "Your",
+  ].map((s) => s.toLowerCase()),
+);
 
-  const children = lines.map((line) => ({
+function joinTokenLikeLines(tokens: string[]) {
+  const rawTokens = tokens.map((t) => t.trim()).filter(Boolean);
+
+  // Fix occasional split words like `M` + `edia` or `Z` + `akat`.
+  const merged: string[] = [];
+  for (let i = 0; i < rawTokens.length; i++) {
+    const t = rawTokens[i]!;
+    const next = rawTokens[i + 1];
+    if (
+      t.length === 1 &&
+      /^[A-Z]$/.test(t) &&
+      next &&
+      /^[a-z]/.test(next)
+    ) {
+      merged.push(`${t}${next}`);
+      i += 1;
+      continue;
+    }
+    merged.push(t);
+  }
+
+  let out = "";
+  for (const t of merged) {
+    const last = out.slice(-1);
+    const noSpaceBefore =
+      !out ||
+      /^[,.;:!?)\]}]$/.test(t) ||
+      /^[,.;:!?]/.test(t) ||
+      t.startsWith("'") ||
+      t.startsWith("’") ||
+      last === "(" ||
+      last === "[" ||
+      last === "{" ||
+      last === "“" ||
+      last === '"' ||
+      last === "‘";
+
+    if (noSpaceBefore) out += t;
+    else out += ` ${t}`;
+  }
+
+  // Clean up common spacing artifacts
+  out = out
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return out;
+}
+
+function looksLikeUrlLine(line: string) {
+  return /^https?:\/\/\S+$/i.test(line.trim());
+}
+
+function looksLikeHeadingLine(line: string) {
+  const t = line.trim();
+  if (!t) return false;
+  if (looksLikeUrlLine(t)) return false;
+  if (t.length < 4 || t.length > 60) return false;
+  if (/[.!?]$/.test(t)) return false;
+
+  const words = t.split(/\s+/g).filter(Boolean);
+  if (words.length > 6) return false;
+
+  const first = words[0]?.toLowerCase();
+  const startsCapital = /^[A-Z]/.test(t);
+  if (words.length === 1) {
+    if (!startsCapital) return false;
+    if (COMMON_SENTENCE_START_WORDS.has(first)) return false;
+    return true;
+  }
+
+  // Multi-word headings like "Who we are"
+  return startsCapital;
+}
+
+function paragraphizePlainText(text: string) {
+  const rawLines = (text || "").split(/\r?\n/g).map((l) => l.trim());
+  const lines = rawLines.filter(Boolean);
+  if (!lines.length) return [];
+
+  const paragraphs: string[] = [];
+  let buf: string[] = [];
+
+  const flush = () => {
+    const joined = joinTokenLikeLines(buf);
+    if (joined) paragraphs.push(joined);
+    buf = [];
+  };
+
+  const isTokenish = (line: string, hasBuf: boolean) => {
+    const t = line.trim();
+    if (!t) return false;
+    if (looksLikeUrlLine(t)) return false;
+    if (looksLikeHeadingLine(t)) return false;
+
+    if (/^[,.;:!?]/.test(t) && hasBuf) return true;
+
+    const words = t.split(/\s+/g).filter(Boolean);
+    if (words.length <= 2 && t.length <= 24) return true;
+    if (words.length <= 3 && t.length <= 32) return true;
+
+    // When we already detected a token-run, keep short fragments together.
+    if (hasBuf && words.length <= 8 && t.length <= 80) return true;
+    return false;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+
+    if (looksLikeUrlLine(line)) {
+      flush();
+      paragraphs.push(line);
+      continue;
+    }
+
+    if (looksLikeHeadingLine(line)) {
+      flush();
+      paragraphs.push(line);
+      continue;
+    }
+
+    if (isTokenish(line, buf.length > 0)) {
+      buf.push(line);
+
+      const currentLen = buf.reduce((sum, t) => sum + t.length + 1, 0);
+      const isSentenceEnd = /[.!?]$/.test(line) || line === "." || line === "!" || line === "?";
+      if (currentLen > 450 && isSentenceEnd) flush();
+      continue;
+    }
+
+    flush();
+    paragraphs.push(line);
+  }
+
+  flush();
+  return paragraphs.filter(Boolean);
+}
+
+function lexicalFromPlainText(text: string) {
+  const paragraphs = paragraphizePlainText(text);
+
+  const children = paragraphs.map((p) => ({
     type: "paragraph",
     version: 1,
     format: "",
@@ -55,7 +225,7 @@ function lexicalFromPlainText(text: string) {
       {
         type: "text",
         version: 1,
-        text: line,
+        text: p,
         format: 0,
         detail: 0,
         mode: "normal",
@@ -71,26 +241,28 @@ function lexicalFromPlainText(text: string) {
       format: "",
       indent: 0,
       direction: "ltr",
-      children: children.length ? children : [
-        {
-          type: "paragraph",
-          version: 1,
-          format: "",
-          indent: 0,
-          direction: "ltr",
-          children: [
+      children: children.length
+        ? children
+        : [
             {
-              type: "text",
+              type: "paragraph",
               version: 1,
-              text: "",
-              format: 0,
-              detail: 0,
-              mode: "normal",
-              style: "",
+              format: "",
+              indent: 0,
+              direction: "ltr",
+              children: [
+                {
+                  type: "text",
+                  version: 1,
+                  text: "",
+                  format: 0,
+                  detail: 0,
+                  mode: "normal",
+                  style: "",
+                },
+              ],
             },
           ],
-        },
-      ],
     },
   };
 }
@@ -152,6 +324,7 @@ function mimeFromExt(filePath: string) {
 }
 
 let payload: Awaited<ReturnType<typeof getPayload>>;
+const mediaCache = new Map<string, string | null>();
 
 async function ensureMediaFromUrl({
   sourceUrl,
@@ -162,8 +335,14 @@ async function ensureMediaFromUrl({
   alt: string;
   repoRoot: string;
 }): Promise<string | null> {
+  const cached = mediaCache.get(sourceUrl);
+  if (cached !== undefined) return cached;
+
   const local = await resolveLocalAsset(sourceUrl, repoRoot);
-  if (!local) return null;
+  if (!local) {
+    mediaCache.set(sourceUrl, null);
+    return null;
+  }
 
   const existing = await payload.find({
     collection: "media",
@@ -171,7 +350,10 @@ async function ensureMediaFromUrl({
     limit: 1,
   });
   const existingDoc = existing?.docs?.[0] as { id: string } | undefined;
-  if (existingDoc?.id) return existingDoc.id;
+  if (existingDoc?.id) {
+    mediaCache.set(sourceUrl, existingDoc.id);
+    return existingDoc.id;
+  }
 
   try {
     const created = (await payload.create({
@@ -182,9 +364,39 @@ async function ensureMediaFromUrl({
       },
       filePath: local.absPath,
     })) as unknown as { id: string };
+    mediaCache.set(sourceUrl, created.id);
     return created.id;
   } catch {
+    mediaCache.set(sourceUrl, null);
     return null;
+  }
+}
+
+async function ensureMediaLibraryFromRecord({
+  urls,
+  alt,
+  repoRoot,
+  limit = 80,
+}: {
+  urls: string[];
+  alt: string;
+  repoRoot: string;
+  limit?: number;
+}) {
+  const uniq: string[] = [];
+  const seen = new Set<string>();
+  for (const u of urls || []) {
+    if (typeof u !== "string") continue;
+    const t = u.trim();
+    if (!t.startsWith("http")) continue;
+    if (seen.has(t)) continue;
+    seen.add(t);
+    uniq.push(t);
+    if (uniq.length >= limit) break;
+  }
+
+  for (const u of uniq) {
+    await ensureMediaFromUrl({ sourceUrl: u, alt, repoRoot });
   }
 }
 
@@ -197,6 +409,9 @@ async function upsertPage(rec: ScrapyPage, repoRoot: string) {
   const heroMedia = heroUrl
     ? await ensureMediaFromUrl({ sourceUrl: heroUrl, alt: title, repoRoot })
     : null;
+
+  // Retain all scraped media URLs (that exist locally) in the Media library.
+  await ensureMediaLibraryFromRecord({ urls: rec.images || [], alt: title, repoRoot });
 
   const existing = await payload.find({
     collection: "pages",
@@ -233,6 +448,9 @@ async function upsertPost(rec: ScrapyPage, repoRoot: string) {
   const featuredImage = featuredUrl
     ? await ensureMediaFromUrl({ sourceUrl: featuredUrl, alt: title, repoRoot })
     : null;
+
+  // Retain all scraped media URLs (that exist locally) in the Media library.
+  await ensureMediaLibraryFromRecord({ urls: rec.images || [], alt: title, repoRoot });
 
   const existing = await payload.find({
     collection: "posts",

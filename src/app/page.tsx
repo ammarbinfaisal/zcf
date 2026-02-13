@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
@@ -44,6 +46,34 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const page = await getPageContentByPathname("/");
 
+  const testimonials = [
+    {
+      quote: "Clear communication and dignity-first support.",
+      name: "Community Partner",
+      title: "Local collaborator",
+    },
+    {
+      quote: "Practical programs that help families stand on their feet.",
+      name: "Volunteer",
+      title: "On-ground support",
+    },
+    {
+      quote: "Education and skill-building that lasts beyond immediate relief.",
+      name: "Supporter",
+      title: "Donor",
+    },
+    {
+      quote: "Transparency builds trust—and trust sustains impact.",
+      name: "Supporter",
+      title: "Recurring donor",
+    },
+    {
+      quote: "Focused on real outcomes, not noise.",
+      name: "Volunteer",
+      title: "Program helper",
+    },
+  ];
+
   return (
     <MovingGradient className="border-b" gradientClassName="opacity-[0.06]">
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
@@ -54,13 +84,19 @@ export default async function HomePage() {
             </Reveal>
             <Reveal delayMs={80}>
               <h1 className="text-pretty text-3xl font-semibold tracking-tight sm:text-5xl">
-                Establishing a collective system of Zakat to uplift communities with dignity.
+                A story of dignity, built through Zakat.
               </h1>
             </Reveal>
             <Reveal delayMs={140}>
-              <p className="max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-                Relief and rehabilitation, education and skill-building, and long-term livelihood support. Built on transparency.
-              </p>
+              <div className="max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+                <TextGenerateEffect
+                  words={
+                    "Relief and rehabilitation, education and skill-building, and long-term livelihood support—rooted in transparency."
+                  }
+                  className="text-base sm:text-lg"
+                  duration={0.4}
+                />
+              </div>
             </Reveal>
 
             <Reveal delayMs={200}>
@@ -132,6 +168,81 @@ export default async function HomePage() {
               </Card>
             </Reveal>
           </div>
+        </section>
+
+        <section className="mt-14">
+          <Reveal>
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <h2 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl">Stories &amp; updates</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Explore news and projects—what we’re doing, and why it matters.
+                </p>
+              </div>
+              <div className="hidden sm:block">
+                <Button asChild variant="secondary">
+                  <Link href="/news/">Read news</Link>
+                </Button>
+              </div>
+            </div>
+          </Reveal>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {[
+              { href: "/our-projects/", title: "Our projects", desc: "Programs and future plans." },
+              { href: "/news/", title: "News", desc: "Updates, announcements, and events." },
+              { href: "/image-gallery/", title: "Gallery", desc: "Photos and videos from the field." },
+            ].map((c, idx) => (
+              <Reveal key={c.href} delayMs={idx * 70}>
+                <Card className="h-full">
+                  <CardContent className="p-6">
+                    <div className="text-sm font-semibold">{c.title}</div>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{c.desc}</p>
+                    <div className="mt-4">
+                      <Link href={c.href} className="text-sm underline underline-offset-4">
+                        Explore
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Reveal>
+            ))}
+          </div>
+
+          <div className="mt-6 sm:hidden">
+            <Button asChild variant="secondary" className="w-full">
+              <Link href="/news/">Read news</Link>
+            </Button>
+          </div>
+        </section>
+
+        <section className="mt-14">
+          <Reveal>
+            <Card>
+              <CardContent className="p-6 sm:p-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl">Words from the community</h2>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      A few short reflections on what matters most: dignity, clarity, and lasting change.
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button asChild variant="secondary">
+                      <Link href="/become-a-volunteer/">Volunteer</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/donation/">Donate</Link>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <InfiniteMovingCards items={testimonials} speed="normal" pauseOnHover className="max-w-none" />
+                </div>
+              </CardContent>
+            </Card>
+          </Reveal>
         </section>
 
         <section className="mt-14 grid gap-8 lg:grid-cols-12">
