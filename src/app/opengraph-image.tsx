@@ -2,8 +2,6 @@ import { ImageResponse } from "next/og";
 
 import { site } from "@/lib/site";
 
-export const runtime = "edge";
-
 export const alt = site.name;
 export const size = {
   width: 1200,
@@ -110,4 +108,3 @@ export default function OpenGraphImage() {
     size,
   );
 }
-
