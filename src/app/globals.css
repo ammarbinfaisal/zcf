@@ -67,6 +67,28 @@
 :root {
   --radius: 0.625rem;
 
+  /* Font fallbacks (avoid build-time Google Fonts fetch) */
+  --font-geist-sans:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    "Liberation Sans",
+    sans-serif;
+  --font-geist-mono:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+
   /* 60/30/10 palette */
   --brand-cream: #fbf6ea; /* 60% */
   --brand-olive: #556b2f; /* 30% */

@@ -13,8 +13,9 @@ export const dynamicParams = false;
 
 export async function generateStaticParams() {
   const routes = await getAllRoutePaths();
+  const reserved = new Set(["/image-gallery/", "/video-gallery/"]);
   return routes
-    .filter((p) => p !== "/")
+    .filter((p) => p !== "/" && !reserved.has(p))
     .map((p) => p.replace(/^\//, "").replace(/\/$/, ""))
     .map((p) => ({ slug: p.split("/").filter(Boolean) }));
 }
@@ -34,10 +35,17 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: pathname },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`/og?path=${encodeURIComponent(pathname)}`],
+    },
     openGraph: {
       title,
       description,
       url: pathname,
+      images: [{ url: `/og?path=${encodeURIComponent(pathname)}`, width: 1200, height: 630, alt: title }],
     },
   };
 }

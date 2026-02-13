@@ -24,6 +24,7 @@ export type PageContent = {
   blocks: Array<
     | { type: "h2"; text: string }
     | { type: "p"; text: string }
+    | { type: "a"; href: string; text: string }
     | { type: "ul"; items: string[] }
   >;
   source: "live" | "fallback";
@@ -80,43 +81,60 @@ const getHarBodyUrlToFile = cache(async () => {
   }
 });
 
-async function localAssetSrcFromUrl(url: string) {
+export async function localAssetSrcFromUrl(url: string) {
   const normalized = normalizeUrl(url);
-  const map = await getHarBodyUrlToFile();
-  const rec = map.get(normalized);
 
-  // Prefer exact URL match from HAR manifest.
-  if (rec?.file) {
-    const abs = path.join(process.cwd(), rec.file);
+  const variants = (() => {
+    const out = [normalized];
+    const stripSize = (u: string) => u.replace(/-\d+x\d+(?=\.[a-z0-9]+$)/i, "");
+    const stripScaled = (u: string) => u.replace(/-scaled(?=\.[a-z0-9]+$)/i, "");
+    const a = stripSize(normalized);
+    const b = stripScaled(normalized);
+    const c = stripScaled(a);
+    for (const v of [a, b, c]) if (v && v !== normalized) out.push(v);
+    return Array.from(new Set(out));
+  })();
+
+  const map = await getHarBodyUrlToFile();
+
+  for (const candidateUrl of variants) {
+    const rec = map.get(candidateUrl);
+
+    // Prefer exact URL match from HAR manifest.
+    if (rec?.file) {
+      const abs = path.join(process.cwd(), rec.file);
+      try {
+        await fs.access(abs);
+        const rel = path.relative(path.join(process.cwd(), "raw", "har_bodies"), abs);
+        const relPosix = rel.split(path.sep).join("/");
+        return `/raw-asset/har/${relPosix}`;
+      } catch {
+        // fall through
+      }
+    }
+
+    // Fallback: derive expected path.
     try {
+      const rel = urlToHarRelPath(candidateUrl);
+      const abs = path.join(process.cwd(), "raw", "har_bodies", ...rel.split("/"));
       await fs.access(abs);
-      const rel = path.relative(path.join(process.cwd(), "raw", "har_bodies"), abs);
-      const relPosix = rel.split(path.sep).join("/");
-      return `/raw-asset/har/${relPosix}`;
+      return `/raw-asset/har/${rel}`;
+    } catch {
+      // fall through
+    }
+
+    // Fallback: downloaded live assets bucket.
+    try {
+      const rel = urlToHarRelPath(candidateUrl);
+      const abs = path.join(process.cwd(), "raw", "assets", "live", ...rel.split("/"));
+      await fs.access(abs);
+      return `/raw-asset/live/${rel}`;
     } catch {
       // fall through
     }
   }
 
-  // Fallback: derive expected path.
-  try {
-    const rel = urlToHarRelPath(normalized);
-    const abs = path.join(process.cwd(), "raw", "har_bodies", ...rel.split("/"));
-    await fs.access(abs);
-    return `/raw-asset/har/${rel}`;
-  } catch {
-    // fall through
-  }
-
-  // Fallback: downloaded live assets bucket.
-  try {
-    const rel = urlToHarRelPath(normalized);
-    const abs = path.join(process.cwd(), "raw", "assets", "live", ...rel.split("/"));
-    await fs.access(abs);
-    return `/raw-asset/live/${rel}`;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 function firstMetaContent(html: string, matcher: RegExp) {
@@ -154,6 +172,17 @@ function extractHeroCandidates(html: string) {
   if (fromImg) candidates.push(fromImg);
 
   return Array.from(new Set(candidates));
+}
+
+function isLikelyContentImageUrl(url: string) {
+  const u = url.toLowerCase();
+  if (!/\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)) return false;
+  if (u.includes("/demo/")) return false;
+  if (u.includes("logo")) return false;
+  if (u.includes("icon")) return false;
+  if (u.includes("elementor")) return false;
+  if (u.includes("/wp-content/plugins/")) return false;
+  return true;
 }
 
 function normalizePathname(input: string) {
@@ -224,34 +253,169 @@ const NAV_JUNK = new Set(
   ].map((s) => s.toLowerCase()),
 );
 
+function looksLikeHeadingLine(line: string) {
+  const t = line.trim();
+  if (!t) return false;
+  if (t.length < 4 || t.length > 72) return false;
+  if (!/[A-Za-z]/.test(t)) return false;
+  if (/^\d+$/.test(t)) return false;
+  if (t.toLowerCase().includes("© copyright")) return false;
+  if (t.endsWith(".") || t.endsWith("!") || t.endsWith(";")) return false;
+
+  const words = t.split(/\s+/g).filter(Boolean);
+  if (words.length > 10) return false;
+  return /^[A-Z]/.test(t) || t === t.toUpperCase();
+}
+
 function isLikelyHeading(line: string) {
   const t = line.trim();
-  if (t.length < 4) return false;
-  if (/^\d+$/.test(t)) return false;
-  const hasLetters = /[A-Za-z]/.test(t);
-  const isAllCaps = t === t.toUpperCase();
-  return hasLetters && isAllCaps;
+  if (!looksLikeHeadingLine(t)) return false;
+  if (NAV_JUNK.has(t.toLowerCase())) return false;
+  return true;
 }
 
 function cleanLines(lines: string[]) {
+  const trimmed = lines.map((l) => l.trim()).filter(Boolean);
+
+  const isAlwaysJunk = (t: string) => {
+    if (t.toLowerCase().includes("© copyright")) return true;
+    if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") return true;
+    if (t === "Let’s Connect" || t === "Let's Connect") return true;
+    if (/^\d+$/.test(t)) return true;
+    if (t === "View More>>") return true;
+    if (t === "Your name" || t === "Your Phone" || t === "Your email") return true;
+    if (t === "Your message (optional)" || t === "Subject" || t === "Role" || t === "Other") return true;
+    return false;
+  };
+
+  // Only treat NAV_JUNK as junk in the initial "menu" portion of the page.
+  // Some pages contain legitimate content lines like "Zakat" which would otherwise be incorrectly dropped.
+  let contentStart = 1;
+  for (let i = 1; i < trimmed.length; i++) {
+    const t = trimmed[i]!;
+    if (t.toLowerCase().includes("© copyright")) break;
+    if (isAlwaysJunk(t)) continue;
+    if (NAV_JUNK.has(t.toLowerCase())) continue;
+    contentStart = i;
+    break;
+  }
+
+  const maybeHeading = contentStart > 1 ? trimmed[contentStart - 1] : null;
+  const shouldReAddMaybeHeading =
+    maybeHeading &&
+    NAV_JUNK.has(maybeHeading.toLowerCase()) &&
+    looksLikeHeadingLine(maybeHeading) &&
+    maybeHeading.toLowerCase() !== (trimmed[0]?.toLowerCase() ?? "");
+
   const out: string[] = [];
   let last = "";
-  for (const raw of lines) {
-    const t = raw.trim();
-    if (!t) continue;
+  for (let i = 0; i < trimmed.length; i++) {
+    const t = trimmed[i]!;
     if (t.toLowerCase().includes("© copyright")) break;
+    if (isAlwaysJunk(t)) continue;
+    if (i < contentStart && NAV_JUNK.has(t.toLowerCase())) continue;
     if (t.toLowerCase() === last.toLowerCase()) continue;
     last = t;
-    if (NAV_JUNK.has(t.toLowerCase())) continue;
-    if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") continue;
-    if (/^\d+$/.test(t)) continue;
-    if (t === "View More>>") continue;
     out.push(t);
+  }
+
+  if (shouldReAddMaybeHeading && maybeHeading) {
+    // Insert after the title line, if present.
+    if (out.length > 0) out.splice(1, 0, maybeHeading);
+    else out.push(maybeHeading);
   }
 
   const footerCut = out.findIndex((l) => l.toLowerCase() === "quick links");
   if (footerCut >= 0) return out.slice(0, footerCut);
   return out;
+}
+
+function joinTokenLikeLines(tokens: string[]) {
+  const rawTokens = tokens.map((t) => t.trim()).filter(Boolean);
+
+  const merged: string[] = [];
+  for (let i = 0; i < rawTokens.length; i++) {
+    const t = rawTokens[i]!;
+    const next = rawTokens[i + 1];
+    if (
+      t.length === 1 &&
+      /^[A-Z]$/.test(t) &&
+      next &&
+      /^[a-z]/.test(next)
+    ) {
+      merged.push(`${t}${next}`);
+      i += 1;
+      continue;
+    }
+    merged.push(t);
+  }
+
+  let out = "";
+  for (const t of merged) {
+    const last = out.slice(-1);
+    const noSpaceBefore =
+      !out ||
+      /^[,.;:!?)\]}]$/.test(t) ||
+      /^[,.;:!?]/.test(t) ||
+      t.startsWith("'") ||
+      t.startsWith("’") ||
+      last === "(" ||
+      last === "[" ||
+      last === "{" ||
+      last === "“" ||
+      last === '"' ||
+      last === "‘";
+
+    if (noSpaceBefore) out += t;
+    else out += ` ${t}`;
+  }
+
+  out = out
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return out;
+}
+
+function collapseWordLikeRuns(lines: string[]) {
+  const out: string[] = [];
+  let buf: string[] = [];
+
+  const flush = () => {
+    const joined = joinTokenLikeLines(buf);
+    if (joined) out.push(joined);
+    buf = [];
+  };
+
+  const isTokenish = (line: string, hasBuf: boolean) => {
+    const t = line.trim();
+    if (!t) return false;
+    if (/^[,.;:!?]/.test(t) && hasBuf) return true;
+
+    const words = t.split(/\s+/g).filter(Boolean);
+    if (words.length <= 2 && t.length <= 24) return true;
+    if (words.length <= 3 && t.length <= 32) return true;
+    if (hasBuf && words.length <= 8 && t.length <= 80) return true;
+    return false;
+  };
+
+  for (const line of lines) {
+    if (isTokenish(line, buf.length > 0)) {
+      buf.push(line);
+      const currentLen = buf.reduce((sum, t) => sum + t.length + 1, 0);
+      const isSentenceEnd = /[.!?]$/.test(line) || line === "." || line === "!" || line === "?";
+      if (currentLen > 450 && isSentenceEnd) flush();
+      continue;
+    }
+
+    flush();
+    out.push(line);
+  }
+
+  flush();
+  return out.filter(Boolean);
 }
 
 function guessTitleFromFirstLine(firstLine: string, pathname: string) {
@@ -288,6 +452,8 @@ function linesToBlocks(lines: string[]) {
   const blocks: PageContent["blocks"] = [];
   let pendingList: string[] = [];
 
+  const looksLikeUrlLine = (line: string) => /^https?:\/\/\S+$/i.test(line.trim());
+
   const flushList = () => {
     if (pendingList.length >= 2) blocks.push({ type: "ul", items: pendingList });
     else if (pendingList.length === 1) blocks.push({ type: "p", text: pendingList[0] });
@@ -295,6 +461,12 @@ function linesToBlocks(lines: string[]) {
   };
 
   for (const l of lines) {
+    if (looksLikeUrlLine(l)) {
+      flushList();
+      blocks.push({ type: "a", href: l.trim(), text: l.trim() });
+      continue;
+    }
+
     if (isLikelyHeading(l)) {
       flushList();
       blocks.push({ type: "h2", text: l });
@@ -329,13 +501,14 @@ export async function getPageContentByPathname(pathname: string): Promise<PageCo
     const absText = path.join(process.cwd(), rec.text_file);
     const txt = await fs.readFile(absText, "utf8");
     const rawLines = txt.split(/\r?\n/g);
-    const cleaned = cleanLines(rawLines);
+    const cleaned = collapseWordLikeRuns(cleanLines(rawLines));
 
     let hero: PageContent["hero"];
     try {
       const absHtml = path.join(process.cwd(), rec.html_file);
       const html = await fs.readFile(absHtml, "utf8");
       for (const candidate of extractHeroCandidates(html)) {
+        if (!isLikelyContentImageUrl(candidate)) continue;
         const localSrc = await localAssetSrcFromUrl(candidate);
         if (localSrc) {
           hero = { src: localSrc, alt: "" };
