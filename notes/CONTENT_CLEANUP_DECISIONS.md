@@ -29,3 +29,15 @@ This file documents decisions made where the source data (HAR + live crawl + Scr
   - `/og?path=/some/page/`
 - The “old/original” logo is used on the **left side** of the OG image (from `public/media/logo.png`, which matches the original `LOGO-ZCF.png` from the crawl).
 
+## Payload rich text conversion
+
+- Heuristic plain-text → rich-text conversion is **not** the target approach for Payload content.
+- Preferred pipeline:
+  - (Optional) Use `claude` CLI to produce cleaned Markdown per page into `raw/claude/markdown.jsonl`.
+  - Import uses `@payloadcms/richtext-lexical` converters:
+    - Markdown → Lexical (`convertMarkdownToLexical`) when Claude Markdown exists.
+    - Otherwise HTML → Lexical (`convertHTMLToLexical`), preserving headings/bold/lists/links from the scraped HTML.
+- Local images are resolved into the Payload Media library and:
+  - Any `<img>` converted to pending upload nodes in Lexical is hydrated to real `media` relationships when possible.
+  - Hero/extra images are also inserted near the top of content to ensure “pages with images” retain visible media.
+
