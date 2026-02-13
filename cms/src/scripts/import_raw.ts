@@ -1,8 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 import { createRequire } from "node:module";
 
 import config from "../../payload.config";
+
+import {
+  convertHTMLToLexical,
+  convertMarkdownToLexical,
+  defaultEditorConfig,
+  sanitizeServerEditorConfig,
+} from "@payloadcms/richtext-lexical";
+import { JSDOM } from "jsdom";
 
 // NOTE: Payload's ESM build currently pulls in `loadEnv` which assumes a default export
 // from `@next/env`. In Next canary, `@next/env` is `__esModule` without a `default`,
@@ -21,6 +30,7 @@ type ScrapyPage = {
   modified_time?: string | null;
   primary_image?: string | null;
   images?: string[];
+  content_html?: string | null;
   content_text?: string | null;
 };
 
@@ -39,452 +49,186 @@ function slugFromPathname(p: string) {
   return normalized.replace(/^\//, "").replace(/\/$/, "");
 }
 
-const COMMON_SENTENCE_START_WORDS = new Set(
-  [
-    "A",
-    "An",
-    "And",
-    "At",
-    "Because",
-    "But",
-    "By",
-    "For",
-    "From",
-    "If",
-    "In",
-    "It",
-    "On",
-    "Or",
-    "The",
-    "These",
-    "This",
-    "Those",
-    "To",
-    "We",
-    "When",
-    "Where",
-    "Which",
-    "While",
-    "Who",
-    "Why",
-    "You",
-    "Your",
-  ].map((s) => s.toLowerCase()),
-);
-
-const NAV_JUNK = new Set(
-  [
-    "Menu",
-    "Home",
-    "About Us",
-    "About",
-    "BBA",
-    "Zakat",
-    "What is Zakat & Nisab",
-    "Zakat Calculator",
-    "Gallery",
-    "Image Gallery",
-    "Video Gallery",
-    "Our Projects",
-    "Blogs",
-    "News",
-    "Contact",
-    "donate",
-    "Careers",
-    "Contact Us",
-    "Privacy Policy",
-    "Terms and Conditions",
-    "Become Volunteer",
-  ].map((s) => s.toLowerCase()),
-);
-
-function joinTokenLikeLines(tokens: string[]) {
-  const rawTokens = tokens.map((t) => t.trim()).filter(Boolean);
-
-  // Fix occasional split words like `M` + `edia` or `Z` + `akat`.
-  const merged: string[] = [];
-  for (let i = 0; i < rawTokens.length; i++) {
-    const t = rawTokens[i]!;
-    const next = rawTokens[i + 1];
-    if (
-      t.length === 1 &&
-      /^[A-Z]$/.test(t) &&
-      next &&
-      /^[a-z]/.test(next)
-    ) {
-      merged.push(`${t}${next}`);
-      i += 1;
-      continue;
-    }
-    merged.push(t);
-  }
-
-  let out = "";
-  for (const t of merged) {
-    const last = out.slice(-1);
-    const noSpaceBefore =
-      !out ||
-      /^[,.;:!?)\]}]$/.test(t) ||
-      /^[,.;:!?]/.test(t) ||
-      t.startsWith("'") ||
-      t.startsWith("’") ||
-      last === "(" ||
-      last === "[" ||
-      last === "{" ||
-      last === "“" ||
-      last === '"' ||
-      last === "‘";
-
-    if (noSpaceBefore) out += t;
-    else out += ` ${t}`;
-  }
-
-  // Clean up common spacing artifacts
-  out = out
-    .replace(/\s+([,.;:!?])/g, "$1")
-    .replace(/\(\s+/g, "(")
-    .replace(/\s+\)/g, ")")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  return out;
-}
-
-function looksLikeUrlLine(line: string) {
-  return /^https?:\/\/\S+$/i.test(line.trim());
-}
-
-function looksLikeEmailLine(line: string) {
-  const t = line.trim();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
-}
-
-function looksLikeHeadingLine(line: string) {
-  const t = line.trim();
-  if (!t) return false;
-  if (looksLikeUrlLine(t)) return false;
-  if (t.length < 4 || t.length > 60) return false;
-  if (/[.!?]$/.test(t)) return false;
-
-  const words = t.split(/\s+/g).filter(Boolean);
-  if (words.length > 6) return false;
-
-  const first = words[0]?.toLowerCase();
-  const startsCapital = /^[A-Z]/.test(t);
-  if (words.length === 1) {
-    if (!startsCapital) return false;
-    if (COMMON_SENTENCE_START_WORDS.has(first)) return false;
-    return true;
-  }
-
-  // Multi-word headings like "Who we are"
-  return startsCapital;
-}
-
-function cleanLines(lines: string[]) {
-  const trimmed = lines.map((l) => l.trim()).filter(Boolean);
-
-  const isAlwaysJunk = (t: string) => {
-    const lower = t.toLowerCase();
-    if (lower.includes("© copyright")) return true;
-    if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") return true;
-    if (t === "Let’s Connect" || t === "Let's Connect") return true;
-    if (/^\d+$/.test(t)) return true;
-    if (t === "View More>>") return true;
-    if (t === "Your name" || t === "Your Phone" || t === "Your email") return true;
-    if (t === "Your message (optional)" || t === "Subject" || t === "Role" || t === "Other") return true;
-    if (looksLikeEmailLine(t)) return false;
-    if (looksLikeUrlLine(t)) return false;
-    // Strip out obvious finance/account blocks from the footer
-    if (lower.startsWith("a/c no:")) return true;
-    if (lower.startsWith("ifsc code:")) return true;
-    if (lower.startsWith("bank name:")) return true;
-    if (lower.startsWith("branch:")) return true;
-    return false;
-  };
-
-  // Only treat NAV_JUNK as junk in the initial "menu" portion of the page.
-  let contentStart = 0;
-  for (let i = 0; i < trimmed.length; i++) {
-    const t = trimmed[i]!;
-    if (t.toLowerCase().includes("© copyright")) break;
-    if (isAlwaysJunk(t)) continue;
-    if (NAV_JUNK.has(t.toLowerCase())) continue;
-    contentStart = i;
-    break;
-  }
-
-  const out: string[] = [];
-  let last = "";
-  for (let i = 0; i < trimmed.length; i++) {
-    const t = trimmed[i]!;
-    if (t.toLowerCase().includes("© copyright")) break;
-    if (isAlwaysJunk(t)) continue;
-    if (i < contentStart && NAV_JUNK.has(t.toLowerCase())) continue;
-    if (t.toLowerCase() === last.toLowerCase()) continue;
-    last = t;
-    out.push(t);
-  }
-
-  const footerCut = out.findIndex((l) => l.toLowerCase() === "quick links");
-  if (footerCut >= 0) return out.slice(0, footerCut);
-  return out;
-}
-
-type TextToken =
-  | { kind: "heading"; text: string }
-  | { kind: "url"; text: string }
-  | { kind: "email"; text: string }
-  | { kind: "text"; text: string };
-
-function tokenizePlainText(text: string) {
-  const rawLines = (text || "").split(/\r?\n/g).map((l) => l.trim());
-  const lines = cleanLines(rawLines);
-  if (!lines.length) return [] as TextToken[];
-
-  const tokens: TextToken[] = [];
-  let buf: string[] = [];
-
-  const flush = () => {
-    const joined = joinTokenLikeLines(buf);
-    if (joined) tokens.push({ kind: "text", text: joined });
-    buf = [];
-  };
-
-  const isTokenish = (line: string, hasBuf: boolean) => {
-    const t = line.trim();
-    if (!t) return false;
-    if (looksLikeUrlLine(t)) return false;
-    if (looksLikeHeadingLine(t)) return false;
-
-    if (/^[,.;:!?]/.test(t) && hasBuf) return true;
-
-    const words = t.split(/\s+/g).filter(Boolean);
-    if (words.length <= 2 && t.length <= 24) return true;
-    if (words.length <= 3 && t.length <= 32) return true;
-
-    // When we already detected a token-run, keep short fragments together.
-    if (hasBuf && words.length <= 8 && t.length <= 80) return true;
-    return false;
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
-
-    if (looksLikeUrlLine(line)) {
-      flush();
-      tokens.push({ kind: "url", text: line });
-      continue;
-    }
-
-    if (looksLikeEmailLine(line)) {
-      flush();
-      tokens.push({ kind: "email", text: line });
-      continue;
-    }
-
-    if (looksLikeHeadingLine(line)) {
-      flush();
-      if (!NAV_JUNK.has(line.toLowerCase())) tokens.push({ kind: "heading", text: line });
-      continue;
-    }
-
-    if (isTokenish(line, buf.length > 0)) {
-      buf.push(line);
-
-      const currentLen = buf.reduce((sum, t) => sum + t.length + 1, 0);
-      const isSentenceEnd = /[.!?]$/.test(line) || line === "." || line === "!" || line === "?";
-      if (currentLen > 450 && isSentenceEnd) flush();
-      continue;
-    }
-
-    flush();
-    tokens.push({ kind: "text", text: line });
-  }
-
-  flush();
-  return tokens.filter((t) => t.text.trim());
-}
-
-function randomNodeId() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const crypto = require("node:crypto") as typeof import("node:crypto");
-  return crypto.randomUUID();
-}
-
-function textNode(text: string) {
-  return {
-    type: "text",
-    version: 1,
-    text,
-    format: 0,
-    detail: 0,
-    mode: "normal",
-    style: "",
-  };
-}
-
-function paragraphNode(children: Array<ReturnType<typeof textNode> | unknown>) {
-  return {
-    type: "paragraph",
-    version: 1,
-    format: "",
-    indent: 0,
-    direction: "ltr",
-    children,
-  };
-}
-
-function headingNode(text: string, tag: "h2" | "h3" = "h2") {
-  return {
-    type: "heading",
-    version: 1,
-    tag,
-    format: "",
-    indent: 0,
-    direction: "ltr",
-    children: [textNode(text)],
-  };
-}
-
-function linkNode(url: string, label: string) {
-  return {
-    type: "link",
-    version: 1,
-    format: "",
-    indent: 0,
-    direction: "ltr",
-    id: randomNodeId(),
-    fields: {
-      linkType: "custom",
-      newTab: true,
-      url,
-    },
-    children: [textNode(label)],
-  };
-}
+type ClaudeMarkdownRecord = {
+  path: string;
+  markdown: string;
+};
 
 function uploadNode(relationTo: "media", value: string) {
   return {
     type: "upload",
-    version: 1,
+    version: 3,
     format: "",
-    id: randomNodeId(),
+    id: crypto.randomUUID(),
     relationTo,
     value,
     fields: {},
   };
 }
 
-function listNode(items: string[]) {
-  return {
-    type: "list",
-    version: 1,
-    format: "",
-    indent: 0,
-    direction: "ltr",
-    listType: "bullet",
-    start: 1,
-    tag: "ul",
-    children: items.map((t) => ({
-      type: "listitem",
-      version: 1,
-      format: "",
-      indent: 0,
-      direction: "ltr",
-      value: 1,
-      checked: undefined,
-      children: [paragraphNode([textNode(t)])],
-    })),
-  };
+function stripScriptsAndStyles(html: string) {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, "");
 }
 
-function looksLikeBulletishLine(line: string) {
-  const t = line.trim();
-  if (!t) return false;
-  if (t.startsWith("-") || t.startsWith("•")) return true;
-  if (/^\d+\./.test(t)) return true;
-  if (/^(Support|Provide|Spread|Conserve|Develop)\b/i.test(t) && t.length <= 140) return true;
-  return false;
+function normalizeImageUrl(src: string, baseUrl: string) {
+  const t = (src || "").trim();
+  if (!t) return null;
+  if (t.startsWith("data:")) return null;
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  if (t.startsWith("//")) return `https:${t}`;
+  try {
+    return new URL(t, baseUrl).toString();
+  } catch {
+    return null;
+  }
 }
 
-function lexicalFromPlainText(
-  text: string,
-  {
-    title,
-    leadingMediaId,
-  }: {
-    title?: string;
-    leadingMediaId?: string | null;
-  } = {},
-) {
-  const tokens = tokenizePlainText(text);
+function walkEditorNodes(node: unknown, visit: (n: any) => void) {
+  if (!node || typeof node !== "object") return;
+  const n = node as any;
+  visit(n);
+  const children = n.children;
+  if (Array.isArray(children)) {
+    for (const c of children) walkEditorNodes(c, visit);
+  }
+}
 
-  const children: any[] = [];
-  if (leadingMediaId) children.push(uploadNode("media", leadingMediaId));
+async function hydrateUploadNodesFromHtml({
+  editorState,
+  pageUrl,
+  alt,
+  repoRoot,
+}: {
+  editorState: any;
+  pageUrl: string;
+  alt: string;
+  repoRoot: string;
+}) {
+  const tasks: Array<Promise<void>> = [];
 
-  let pendingList: string[] = [];
-  const flushList = () => {
-    if (pendingList.length >= 2) children.push(listNode(pendingList));
-    else if (pendingList.length === 1) children.push(paragraphNode([textNode(pendingList[0]!)]));
-    pendingList = [];
-  };
+  walkEditorNodes(editorState?.root, (n) => {
+    if (n?.type !== "upload") return;
+    if (!n?.pending?.src) return;
 
-  for (const tok of tokens) {
-    if (tok.kind === "heading") {
-      flushList();
-      if (title && tok.text.trim().toLowerCase() === title.trim().toLowerCase()) continue;
-      children.push(headingNode(tok.text, "h2"));
-      continue;
-    }
+    const src = normalizeImageUrl(String(n.pending.src), pageUrl);
+    if (!src) return;
 
-    if (tok.kind === "url") {
-      flushList();
-      const href = tok.text.trim();
-      children.push(paragraphNode([linkNode(href, href)]));
-      continue;
-    }
+    tasks.push(
+      (async () => {
+        const mediaId = await ensureMediaFromUrl({ sourceUrl: src, alt, repoRoot });
+        if (!mediaId) return;
+        delete n.pending;
+        n.relationTo = "media";
+        n.value = mediaId;
+        n.fields = n.fields || {};
+        n.version = 3;
+        n.format = n.format ?? "";
+        n.id = n.id || crypto.randomUUID();
+      })(),
+    );
+  });
 
-    if (tok.kind === "email") {
-      flushList();
-      const email = tok.text.trim();
-      children.push(paragraphNode([linkNode(`mailto:${email}`, email)]));
-      continue;
-    }
+  await Promise.all(tasks);
+}
 
-    const line = tok.text.trim();
-    if (looksLikeBulletishLine(line)) {
-      pendingList.push(line.replace(/^[-•]\s*/, "").replace(/^\d+\.\s*/, "").trim());
-      continue;
-    }
+function ensureLeadingUploads(editorState: any, mediaIds: string[]) {
+  const root = editorState?.root;
+  if (!root) return;
+  if (!Array.isArray(root.children)) root.children = [];
 
-    flushList();
-    children.push(paragraphNode([textNode(line)]));
+  const wanted = Array.from(new Set(mediaIds.filter(Boolean)));
+  if (!wanted.length) return;
+
+  const already = new Set<string>();
+  for (const c of root.children.slice(0, 8)) {
+    if (c?.type === "upload" && typeof c.value === "string") already.add(c.value);
   }
 
-  flushList();
+  const inserts = wanted.filter((id) => !already.has(id)).map((id) => uploadNode("media", id));
+  if (inserts.length) root.children.unshift(...inserts);
+}
 
-  return {
-    root: {
-      type: "root",
-      version: 1,
-      format: "",
-      indent: 0,
-      direction: "ltr",
-      children: children.length
-        ? children
-        : [
-            paragraphNode([textNode("")]),
-          ],
-    },
-  };
+async function loadClaudeMarkdownByPath(repoRoot: string) {
+  const filePath = path.join(repoRoot, "raw", "claude", "markdown.jsonl");
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const map = new Map<string, string>();
+    for (const line of raw.split(/\r?\n/g)) {
+      const t = line.trim();
+      if (!t) continue;
+      try {
+        const rec = JSON.parse(t) as ClaudeMarkdownRecord;
+        if (!rec?.path || !rec?.markdown) continue;
+        map.set(normalizePathname(rec.path), String(rec.markdown));
+      } catch {
+        // ignore bad line
+      }
+    }
+    return map;
+  } catch {
+    return new Map<string, string>();
+  }
+}
+
+async function lexicalFromRecord({
+  rec,
+  title,
+  repoRoot,
+  heroMediaId,
+  extraMediaIds,
+  markdownByPath,
+  editorConfig,
+}: {
+  rec: ScrapyPage;
+  title: string;
+  repoRoot: string;
+  heroMediaId: string | null;
+  extraMediaIds: string[];
+  markdownByPath: Map<string, string>;
+  editorConfig: any;
+}) {
+  const pathname = normalizePathname(rec.path);
+  const md = markdownByPath.get(pathname);
+  if (md) {
+    const editorState = convertMarkdownToLexical({ editorConfig, markdown: md });
+    ensureLeadingUploads(editorState, [heroMediaId, ...extraMediaIds].filter(Boolean) as string[]);
+    return editorState;
+  }
+
+  const html = (rec.content_html || "").trim();
+  if (!html) {
+    return convertMarkdownToLexical({
+      editorConfig,
+      markdown: "Content was not captured in the current crawl snapshot.",
+    });
+  }
+
+  const editorState = convertHTMLToLexical({
+    editorConfig,
+    html: stripScriptsAndStyles(html),
+    JSDOM,
+  });
+
+  await hydrateUploadNodesFromHtml({
+    editorState,
+    pageUrl: rec.url,
+    alt: title,
+    repoRoot,
+  });
+
+  ensureLeadingUploads(editorState, [heroMediaId, ...extraMediaIds].filter(Boolean) as string[]);
+  return editorState;
 }
 
 function sha1Hex8(input: string) {
   // Match extract_har_to_raw.py query hashing behavior.
   // Avoid bringing crypto types into the CMS TS build; use dynamic import.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const crypto = require("node:crypto") as typeof import("node:crypto");
-  return crypto.createHash("sha1").update(input).digest("hex").slice(0, 8);
+  const c = require("node:crypto") as typeof import("node:crypto");
+  return c.createHash("sha1").update(input).digest("hex").slice(0, 8);
 }
 
 function urlToHarRelPath(url: string) {
@@ -561,7 +305,42 @@ function isLikelyContentImageUrl(url: string) {
 }
 
 let payload: Awaited<ReturnType<typeof getPayload>>;
+let lexicalEditorConfig: any;
+let claudeMarkdownByPath = new Map<string, string>();
 const mediaCache = new Map<string, string | null>();
+
+async function collectInlineMediaIds({
+  rec,
+  title,
+  repoRoot,
+  heroMediaId,
+  limit = 3,
+}: {
+  rec: ScrapyPage;
+  title: string;
+  repoRoot: string;
+  heroMediaId: string | null;
+  limit?: number;
+}) {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  if (heroMediaId) seen.add(heroMediaId);
+
+  for (const u of rec.images || []) {
+    if (ids.length >= limit) break;
+    if (typeof u !== "string") continue;
+    const t = u.trim();
+    if (!t.startsWith("http")) continue;
+    if (!isLikelyContentImageUrl(t)) continue;
+    const id = await ensureMediaFromUrl({ sourceUrl: t, alt: title, repoRoot });
+    if (!id) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+
+  return ids;
+}
 
 async function ensureMediaFromUrl({
   sourceUrl,
@@ -651,7 +430,16 @@ async function upsertPage(rec: ScrapyPage, repoRoot: string) {
     ? await ensureMediaFromUrl({ sourceUrl: heroUrl, alt: title, repoRoot })
     : null;
 
-  const content = lexicalFromPlainText(rec.content_text || "", { title, leadingMediaId: heroMedia });
+  const extraMediaIds = await collectInlineMediaIds({ rec, title, repoRoot, heroMediaId: heroMedia });
+  const content = await lexicalFromRecord({
+    rec,
+    title,
+    repoRoot,
+    heroMediaId: heroMedia,
+    extraMediaIds,
+    markdownByPath: claudeMarkdownByPath,
+    editorConfig: lexicalEditorConfig,
+  });
 
   // Retain all scraped media URLs (that exist locally) in the Media library.
   await ensureMediaLibraryFromRecord({ urls: rec.images || [], alt: title, repoRoot });
@@ -694,7 +482,16 @@ async function upsertPost(rec: ScrapyPage, repoRoot: string) {
     ? await ensureMediaFromUrl({ sourceUrl: featuredUrl, alt: title, repoRoot })
     : null;
 
-  const content = lexicalFromPlainText(rec.content_text || "", { title, leadingMediaId: featuredImage });
+  const extraMediaIds = await collectInlineMediaIds({ rec, title, repoRoot, heroMediaId: featuredImage });
+  const content = await lexicalFromRecord({
+    rec,
+    title,
+    repoRoot,
+    heroMediaId: featuredImage,
+    extraMediaIds,
+    markdownByPath: claudeMarkdownByPath,
+    editorConfig: lexicalEditorConfig,
+  });
 
   // Retain all scraped media URLs (that exist locally) in the Media library.
   await ensureMediaLibraryFromRecord({ urls: rec.images || [], alt: title, repoRoot });
@@ -738,6 +535,10 @@ async function main() {
     .map((l) => JSON.parse(l) as ScrapyPage);
 
   payload = await getPayload({ config });
+  claudeMarkdownByPath = await loadClaudeMarkdownByPath(repoRoot);
+  // Use Payload's sanitized config so markdown/html transformers match the CMS editor features.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  lexicalEditorConfig = await sanitizeServerEditorConfig(defaultEditorConfig as any, payload.config as any);
 
   // Import only canonical content pages + posts.
   const importable = rows.filter((r) => r.kind === "home" || r.kind === "page" || r.kind === "post");
