@@ -36,6 +36,20 @@ export const Posts: CollectionConfig = {
       relationTo: "media",
     },
     {
+      name: "imageUrls",
+      type: "array",
+      admin: {
+        description: "Ordered list of image URLs discovered on this post (for later media ingestion).",
+      },
+      fields: [
+        {
+          name: "url",
+          type: "text",
+          required: true,
+        },
+      ],
+    },
+    {
       name: "excerpt",
       type: "textarea",
     },
