@@ -67,29 +67,51 @@
 :root {
   --radius: 0.625rem;
 
+  /* Font fallbacks (avoid build-time Google Fonts fetch) */
+  --font-geist-sans:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    "Liberation Sans",
+    sans-serif;
+  --font-geist-mono:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+
   /* 60/30/10 palette */
-  --brand-cream: #fbf6ea; /* 60% */
-  --brand-olive: #556b2f; /* 30% */
-  --brand-ochre: #c9a227; /* 10% */
+  --brand-cream: #0b0f14; /* 60% */
+  --brand-olive: #334155; /* 30% */
+  --brand-ochre: #fbbf24; /* 10% */
 
   --background: var(--brand-cream);
-  --foreground: #1f1b16;
+  --foreground: #f8fafc;
 
-  --card: color-mix(in srgb, white 70%, var(--brand-cream));
+  --card: color-mix(in srgb, var(--background) 86%, var(--brand-olive));
   --card-foreground: var(--foreground);
   --popover: var(--card);
   --popover-foreground: var(--foreground);
 
   --primary: var(--brand-olive);
-  --primary-foreground: var(--brand-cream);
+  --primary-foreground: var(--background);
 
-  --secondary: color-mix(in srgb, var(--brand-olive) 10%, var(--brand-cream));
-  --secondary-foreground: color-mix(in srgb, var(--foreground) 92%, var(--brand-olive));
+  --secondary: color-mix(in srgb, var(--brand-olive) 22%, var(--background));
+  --secondary-foreground: var(--foreground);
 
-  --muted: color-mix(in srgb, var(--brand-olive) 4%, var(--brand-cream));
-  --muted-foreground: color-mix(in srgb, var(--foreground) 62%, var(--brand-cream));
+  --muted: color-mix(in srgb, var(--brand-olive) 16%, var(--background));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 74%, var(--background));
 
-  --accent: color-mix(in srgb, var(--brand-ochre) 14%, var(--brand-cream));
+  --accent: color-mix(in srgb, var(--brand-ochre) 18%, var(--background));
   --accent-foreground: var(--foreground);
 
   --destructive: #e5484d;
@@ -114,25 +136,25 @@
 }
 
 .dark {
-  --background: #12110d;
-  --foreground: var(--brand-cream);
+  --background: var(--brand-cream);
+  --foreground: #f8fafc;
 
-  --card: color-mix(in srgb, #12110d 82%, var(--brand-olive));
-  --card-foreground: var(--brand-cream);
+  --card: color-mix(in srgb, var(--background) 86%, var(--brand-olive));
+  --card-foreground: var(--foreground);
   --popover: var(--card);
-  --popover-foreground: var(--brand-cream);
+  --popover-foreground: var(--foreground);
 
   --primary: var(--brand-olive);
-  --primary-foreground: var(--brand-cream);
+  --primary-foreground: var(--background);
 
-  --secondary: color-mix(in srgb, var(--brand-olive) 22%, #12110d);
-  --secondary-foreground: var(--brand-cream);
+  --secondary: color-mix(in srgb, var(--brand-olive) 22%, var(--background));
+  --secondary-foreground: var(--foreground);
 
-  --muted: color-mix(in srgb, var(--brand-olive) 14%, #12110d);
-  --muted-foreground: color-mix(in srgb, var(--brand-cream) 72%, #12110d);
+  --muted: color-mix(in srgb, var(--brand-olive) 16%, var(--background));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 72%, var(--background));
 
-  --accent: color-mix(in srgb, var(--brand-ochre) 18%, #12110d);
-  --accent-foreground: var(--brand-cream);
+  --accent: color-mix(in srgb, var(--brand-ochre) 18%, var(--background));
+  --accent-foreground: var(--foreground);
 
   --destructive: #ff5a5f;
   --border: color-mix(in srgb, var(--brand-olive) 22%, #12110d);
@@ -171,11 +193,11 @@
   h2,
   h3,
   h4 {
-    color: var(--brand-olive);
+    color: var(--foreground);
   }
 
   a {
-    color: var(--brand-olive);
+    color: color-mix(in srgb, var(--brand-ochre) 55%, var(--foreground));
     text-underline-offset: 0.18em;
   }
 

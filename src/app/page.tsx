@@ -6,7 +6,8 @@ import MovingGradient from "@/components/animata/background/moving-gradient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import { Button as MovingBorderButton } from "@/components/ui/moving-border";
 import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
@@ -45,37 +46,39 @@ export default async function HomePage() {
   const page = await getPageContentByPathname("/");
 
   return (
-    <MovingGradient className="border-b" gradientClassName="opacity-[0.06]">
+    <MovingGradient className="border-b" gradientClassName="opacity-[0.08]">
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
-        <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
+        <section className="relative grid gap-10 overflow-hidden rounded-3xl border bg-card/40 p-6 sm:p-10 lg:grid-cols-12 lg:items-center">
+          <BackgroundBeams className="absolute inset-0 opacity-60" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70" />
+
           <div className="space-y-6 lg:col-span-7">
             <Reveal>
               <p className="text-sm font-medium text-foreground/70">Official site</p>
             </Reveal>
             <Reveal delayMs={80}>
               <h1 className="text-pretty text-3xl font-semibold tracking-tight sm:text-5xl">
-                Establishing a collective system of Zakat to uplift communities with dignity.
+                Give with confidence. Build lasting impact.
               </h1>
             </Reveal>
             <Reveal delayMs={140}>
               <p className="max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-                Relief and rehabilitation, education and skill-building, and long-term livelihood support. Built on transparency.
+                Relief and rehabilitation, education and skill-building, and long-term livelihood support—built on transparency.
               </p>
             </Reveal>
 
             <Reveal delayMs={200}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link href="/donation/" legacyBehavior>
-                  <HoverBorderGradient
-                    as="a"
-                    containerClassName="rounded-full"
-                    className="px-6 py-3"
-                    duration={1.4}
-                    idleAnimate={false}
-                  >
-                    Donate now
-                  </HoverBorderGradient>
-                </Link>
+                <MovingBorderButton
+                  as="a"
+                  href="/donation/"
+                  containerClassName="h-12 w-full sm:w-auto"
+                  className="px-6 font-medium"
+                  borderRadius="999px"
+                  duration={3200}
+                >
+                  Donate now
+                </MovingBorderButton>
                 <Button asChild size="lg" variant="secondary">
                   <Link href="/become-a-volunteer/">Become a volunteer</Link>
                 </Button>
@@ -102,7 +105,7 @@ export default async function HomePage() {
 
           <div className="lg:col-span-5">
             <Reveal delayMs={120}>
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden bg-card/70">
                 <div className="relative aspect-[4/3] w-full">
                   <Image
                     src={heroImage}

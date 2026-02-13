@@ -80,7 +80,7 @@ const getHarBodyUrlToFile = cache(async () => {
   }
 });
 
-async function localAssetSrcFromUrl(url: string) {
+export async function localAssetSrcFromUrl(url: string) {
   const normalized = normalizeUrl(url);
   const map = await getHarBodyUrlToFile();
   const rec = map.get(normalized);
@@ -224,6 +224,20 @@ const NAV_JUNK = new Set(
   ].map((s) => s.toLowerCase()),
 );
 
+function looksLikeHeadingLine(line: string) {
+  const t = line.trim();
+  if (!t) return false;
+  if (t.length < 4 || t.length > 72) return false;
+  if (!/[A-Za-z]/.test(t)) return false;
+  if (/^\d+$/.test(t)) return false;
+  if (t.toLowerCase().includes("© copyright")) return false;
+  if (t.endsWith(".") || t.endsWith("!") || t.endsWith(";")) return false;
+
+  const words = t.split(/\s+/g).filter(Boolean);
+  if (words.length > 10) return false;
+  return /^[A-Z]/.test(t) || t === t.toUpperCase();
+}
+
 function isLikelyHeading(line: string) {
   const t = line.trim();
   if (t.length < 4) return false;
@@ -234,24 +248,144 @@ function isLikelyHeading(line: string) {
 }
 
 function cleanLines(lines: string[]) {
+  const trimmed = lines.map((l) => l.trim()).filter(Boolean);
+
+  const isAlwaysJunk = (t: string) => {
+    if (t.toLowerCase().includes("© copyright")) return true;
+    if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") return true;
+    if (/^\d+$/.test(t)) return true;
+    if (t === "View More>>") return true;
+    return false;
+  };
+
+  // Only treat NAV_JUNK as junk in the initial "menu" portion of the page.
+  // Some pages contain legitimate content lines like "Zakat" which would otherwise be incorrectly dropped.
+  let contentStart = 1;
+  for (let i = 1; i < trimmed.length; i++) {
+    const t = trimmed[i]!;
+    if (t.toLowerCase().includes("© copyright")) break;
+    if (isAlwaysJunk(t)) continue;
+    if (NAV_JUNK.has(t.toLowerCase())) continue;
+    contentStart = i;
+    break;
+  }
+
+  const maybeHeading = contentStart > 1 ? trimmed[contentStart - 1] : null;
+  const shouldReAddMaybeHeading =
+    maybeHeading &&
+    NAV_JUNK.has(maybeHeading.toLowerCase()) &&
+    looksLikeHeadingLine(maybeHeading) &&
+    maybeHeading.toLowerCase() !== (trimmed[0]?.toLowerCase() ?? "");
+
   const out: string[] = [];
   let last = "";
-  for (const raw of lines) {
-    const t = raw.trim();
-    if (!t) continue;
+  for (let i = 0; i < trimmed.length; i++) {
+    const t = trimmed[i]!;
     if (t.toLowerCase().includes("© copyright")) break;
+    if (isAlwaysJunk(t)) continue;
+    if (i < contentStart && NAV_JUNK.has(t.toLowerCase())) continue;
     if (t.toLowerCase() === last.toLowerCase()) continue;
     last = t;
-    if (NAV_JUNK.has(t.toLowerCase())) continue;
-    if (t === "Facebook-f" || t === "Twitter" || t === "Instagram" || t === "Youtube") continue;
-    if (/^\d+$/.test(t)) continue;
-    if (t === "View More>>") continue;
     out.push(t);
+  }
+
+  if (shouldReAddMaybeHeading && maybeHeading) {
+    // Insert after the title line, if present.
+    if (out.length > 0) out.splice(1, 0, maybeHeading);
+    else out.push(maybeHeading);
   }
 
   const footerCut = out.findIndex((l) => l.toLowerCase() === "quick links");
   if (footerCut >= 0) return out.slice(0, footerCut);
   return out;
+}
+
+function joinTokenLikeLines(tokens: string[]) {
+  const rawTokens = tokens.map((t) => t.trim()).filter(Boolean);
+
+  const merged: string[] = [];
+  for (let i = 0; i < rawTokens.length; i++) {
+    const t = rawTokens[i]!;
+    const next = rawTokens[i + 1];
+    if (
+      t.length === 1 &&
+      /^[A-Z]$/.test(t) &&
+      next &&
+      /^[a-z]/.test(next)
+    ) {
+      merged.push(`${t}${next}`);
+      i += 1;
+      continue;
+    }
+    merged.push(t);
+  }
+
+  let out = "";
+  for (const t of merged) {
+    const last = out.slice(-1);
+    const noSpaceBefore =
+      !out ||
+      /^[,.;:!?)\]}]$/.test(t) ||
+      /^[,.;:!?]/.test(t) ||
+      t.startsWith("'") ||
+      t.startsWith("’") ||
+      last === "(" ||
+      last === "[" ||
+      last === "{" ||
+      last === "“" ||
+      last === '"' ||
+      last === "‘";
+
+    if (noSpaceBefore) out += t;
+    else out += ` ${t}`;
+  }
+
+  out = out
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return out;
+}
+
+function collapseWordLikeRuns(lines: string[]) {
+  const out: string[] = [];
+  let buf: string[] = [];
+
+  const flush = () => {
+    const joined = joinTokenLikeLines(buf);
+    if (joined) out.push(joined);
+    buf = [];
+  };
+
+  const isTokenish = (line: string, hasBuf: boolean) => {
+    const t = line.trim();
+    if (!t) return false;
+    if (/^[,.;:!?]/.test(t) && hasBuf) return true;
+
+    const words = t.split(/\s+/g).filter(Boolean);
+    if (words.length <= 2 && t.length <= 24) return true;
+    if (words.length <= 3 && t.length <= 32) return true;
+    if (hasBuf && words.length <= 8 && t.length <= 80) return true;
+    return false;
+  };
+
+  for (const line of lines) {
+    if (isTokenish(line, buf.length > 0)) {
+      buf.push(line);
+      const currentLen = buf.reduce((sum, t) => sum + t.length + 1, 0);
+      const isSentenceEnd = /[.!?]$/.test(line) || line === "." || line === "!" || line === "?";
+      if (currentLen > 450 && isSentenceEnd) flush();
+      continue;
+    }
+
+    flush();
+    out.push(line);
+  }
+
+  flush();
+  return out.filter(Boolean);
 }
 
 function guessTitleFromFirstLine(firstLine: string, pathname: string) {
@@ -329,7 +463,7 @@ export async function getPageContentByPathname(pathname: string): Promise<PageCo
     const absText = path.join(process.cwd(), rec.text_file);
     const txt = await fs.readFile(absText, "utf8");
     const rawLines = txt.split(/\r?\n/g);
-    const cleaned = cleanLines(rawLines);
+    const cleaned = collapseWordLikeRuns(cleanLines(rawLines));
 
     let hero: PageContent["hero"];
     try {
