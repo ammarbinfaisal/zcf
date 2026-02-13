@@ -7,8 +7,6 @@ import config from "../../payload.config";
 import {
   convertHTMLToLexical,
   convertMarkdownToLexical,
-  defaultEditorConfig,
-  sanitizeServerEditorConfig,
 } from "@payloadcms/richtext-lexical";
 import { JSDOM } from "jsdom";
 
@@ -128,11 +126,27 @@ function extractOrderedImageUrls(container: Element, baseUrl: string) {
   return out;
 }
 
-function removeJunkAndImages(container: Element) {
+function removeJunkAndImages(container: Element, baseUrl: string) {
   for (const el of container.querySelectorAll(
     "script,style,noscript,nav,header,footer,iframe,svg,form,input,textarea,button,select,option",
   )) {
     el.remove();
+  }
+
+  for (const a of Array.from(container.querySelectorAll("a"))) {
+    const hrefRaw = (a.getAttribute("href") || "").trim();
+    if (!hrefRaw || hrefRaw === "#" || hrefRaw.startsWith("javascript:") || hrefRaw.startsWith("#")) {
+      a.replaceWith(...Array.from(a.childNodes));
+      continue;
+    }
+
+    const normalized = normalizeUrl(hrefRaw, baseUrl);
+    if (!normalized) {
+      a.replaceWith(...Array.from(a.childNodes));
+      continue;
+    }
+
+    a.setAttribute("href", normalized);
   }
 
   for (const img of Array.from(container.querySelectorAll("img"))) img.remove();
@@ -167,7 +181,7 @@ async function lexicalFromHtml({
   const doc = parseHtmlFragment(raw);
   const container = pickMainContainer(doc);
 
-  removeJunkAndImages(container);
+  removeJunkAndImages(container, pageUrl);
   const cleaned = container.innerHTML.trim();
 
   if (!cleaned) {
@@ -284,16 +298,35 @@ async function main() {
 
   payload = await getPayload({ config });
 
-  // Use Payload's sanitized config so converters match the CMS editor features.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lexicalEditorConfig = await sanitizeServerEditorConfig(defaultEditorConfig as any, payload.config as any);
+  // Use the exact editor config from Payload so conversion matches validation.
+  lexicalEditorConfig = (payload.config.editor as any)?.editorConfig;
+  if (!lexicalEditorConfig) throw new Error("Missing Payload lexical editor config");
 
   // Import only canonical content pages + posts.
   const importable = rows.filter((r) => r.kind === "home" || r.kind === "page" || r.kind === "post");
 
   for (const rec of importable) {
-    if (rec.kind === "post") await upsertPost(rec);
-    else await upsertPage(rec);
+    try {
+      if (rec.kind === "post") await upsertPost(rec);
+      else await upsertPage(rec);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        JSON.stringify(
+          {
+            message: (err as Error)?.message,
+            kind: rec.kind,
+            path: rec.path,
+            url: rec.url,
+            title: rec.title,
+            data: (err as any)?.data,
+          },
+          null,
+          2,
+        ),
+      );
+      throw err;
+    }
   }
 
   payload.logger.info(`Imported/updated ${importable.length} docs from raw/scrapy/pages.jsonl`);
@@ -305,4 +338,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
