@@ -162,7 +162,9 @@ class HTMLCollector(HTMLParser):
             parsed = split_url(joined)
             if parsed.scheme not in {"http", "https"}:
                 return
-            normalized = urlunsplit((parsed.scheme, parsed.netloc, parsed.path or "/", parsed.query, ""))
+            normalized = urlunsplit(
+                (parsed.scheme, parsed.netloc, parsed.path or "/", parsed.query, "")
+            )
             out.add(normalized)
 
         if tag == "a":
@@ -324,7 +326,12 @@ def main() -> int:
                 html = payload.decode("utf-8", errors="replace")
                 collector = HTMLCollector(url)
                 collector.feed(html)
-                txt_path = RAW_DIR / "content" / "har_pages" / url_to_rel_path(url, default_ext=".txt")
+                txt_path = (
+                    RAW_DIR
+                    / "content"
+                    / "har_pages"
+                    / url_to_rel_path(url, default_ext=".txt")
+                )
                 ensure_dir(txt_path.parent)
                 txt_path.write_text(collector.text, encoding="utf-8")
                 har_page_text_records.append(
@@ -402,11 +409,26 @@ def main() -> int:
                 continue
             normalized = normalize_base_url(link)
             discovered_route_urls.add(normalized)
+            if (
+                normalized not in visited_routes
+                and len(visited_routes) + len(crawl_queue) < MAX_CRAWL_PAGES
+            ):
+                crawl_queue.append(normalized)
 
         for asset in collector.assets:
             parsed = split_url(asset)
             if parsed.scheme in {"http", "https"}:
-                discovered_asset_urls.add(urlunsplit((parsed.scheme, parsed.netloc, parsed.path or "/", parsed.query, "")))
+                discovered_asset_urls.add(
+                    urlunsplit(
+                        (
+                            parsed.scheme,
+                            parsed.netloc,
+                            parsed.path or "/",
+                            parsed.query,
+                            "",
+                        )
+                    )
+                )
 
     same_host_assets = []
     skipped_assets = []
@@ -427,26 +449,46 @@ def main() -> int:
         "all_route_paths": all_route_paths,
         "route_tree": route_tree(all_route_paths),
     }
-    (RAW_DIR / "routes" / "routes.json").write_text(json.dumps(routes_json, indent=2), encoding="utf-8")
-    (RAW_DIR / "routes" / "routes.txt").write_text("\n".join(all_route_paths) + "\n", encoding="utf-8")
+    (RAW_DIR / "routes" / "routes.json").write_text(
+        json.dumps(routes_json, indent=2), encoding="utf-8"
+    )
+    (RAW_DIR / "routes" / "routes.txt").write_text(
+        "\n".join(all_route_paths) + "\n", encoding="utf-8"
+    )
 
     combined_text_parts = []
     for item in sorted(crawled_pages, key=lambda x: x["url"]):
         text_file = Path(item["text_file"])
         text = text_file.read_text(encoding="utf-8", errors="replace")
         combined_text_parts.append(f"# {item['url']}\n\n{text}\n")
-    (RAW_DIR / "content" / "all_live_page_text.md").write_text("\n".join(combined_text_parts), encoding="utf-8")
+    (RAW_DIR / "content" / "all_live_page_text.md").write_text(
+        "\n".join(combined_text_parts), encoding="utf-8"
+    )
 
-    (RAW_DIR / "manifests" / "har_summary.json").write_text(json.dumps(har_manifest, indent=2), encoding="utf-8")
-    (RAW_DIR / "manifests" / "har_bodies.json").write_text(json.dumps(har_body_records, indent=2), encoding="utf-8")
+    (RAW_DIR / "manifests" / "har_summary.json").write_text(
+        json.dumps(har_manifest, indent=2), encoding="utf-8"
+    )
+    (RAW_DIR / "manifests" / "har_bodies.json").write_text(
+        json.dumps(har_body_records, indent=2), encoding="utf-8"
+    )
     (RAW_DIR / "manifests" / "missing_har_bodies.json").write_text(
         json.dumps(missing_body_records, indent=2), encoding="utf-8"
     )
-    (RAW_DIR / "manifests" / "har_page_text.json").write_text(json.dumps(har_page_text_records, indent=2), encoding="utf-8")
-    (RAW_DIR / "manifests" / "live_pages.json").write_text(json.dumps(crawled_pages, indent=2), encoding="utf-8")
-    (RAW_DIR / "manifests" / "live_assets.json").write_text(json.dumps(same_host_assets, indent=2), encoding="utf-8")
-    (RAW_DIR / "manifests" / "live_asset_skips.json").write_text(json.dumps(skipped_assets, indent=2), encoding="utf-8")
-    (RAW_DIR / "manifests" / "crawl_failures.json").write_text(json.dumps(crawl_failures, indent=2), encoding="utf-8")
+    (RAW_DIR / "manifests" / "har_page_text.json").write_text(
+        json.dumps(har_page_text_records, indent=2), encoding="utf-8"
+    )
+    (RAW_DIR / "manifests" / "live_pages.json").write_text(
+        json.dumps(crawled_pages, indent=2), encoding="utf-8"
+    )
+    (RAW_DIR / "manifests" / "live_assets.json").write_text(
+        json.dumps(same_host_assets, indent=2), encoding="utf-8"
+    )
+    (RAW_DIR / "manifests" / "live_asset_skips.json").write_text(
+        json.dumps(skipped_assets, indent=2), encoding="utf-8"
+    )
+    (RAW_DIR / "manifests" / "crawl_failures.json").write_text(
+        json.dumps(crawl_failures, indent=2), encoding="utf-8"
+    )
 
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -467,7 +509,9 @@ def main() -> int:
         "mime_counts": dict(mime_counter),
         "status_counts": {str(k): v for k, v in status_counter.items()},
     }
-    (RAW_DIR / "manifests" / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (RAW_DIR / "manifests" / "report.json").write_text(
+        json.dumps(report, indent=2), encoding="utf-8"
+    )
 
     readme = f"""# Raw Site Extraction
 
