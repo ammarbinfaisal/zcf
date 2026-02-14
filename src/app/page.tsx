@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
-import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
+import { Skiper51 } from "@/components/ui/skiper-ui/skiper51";
+import { Skiper54 } from "@/components/ui/skiper-ui/skiper54";
+import { Skiper48 } from "@/components/ui/skiper-ui/skiper48";
 import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
@@ -245,7 +247,24 @@ export default async function HomePage() {
                 </div>
 
                 <div className="mt-8">
-                  <InfiniteMovingCards items={testimonials} speed="normal" pauseOnHover className="max-w-none" />
+                  <div className="hidden sm:grid gap-4 md:grid-cols-3">
+                    {testimonials.slice(0, 3).map((t, i) => (
+                      <Card key={i} className="bg-muted/30">
+                        <CardContent className="p-6">
+                          <p className="text-sm italic text-muted-foreground">"{t.quote}"</p>
+                          <div className="mt-4">
+                            <div className="text-sm font-semibold">{t.name}</div>
+                            <div className="text-xs text-muted-foreground">{t.title}</div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  <div className="sm:hidden space-y-6">
+                    <Skiper51 />
+                    <Skiper54 />
+                    <Skiper48 />
+                  </div>
                 </div>
               </CardContent>
             </Card>
