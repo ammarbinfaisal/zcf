@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { Button as MovingBorderButton } from "@/components/ui/moving-border";
+import { Skiper52 } from "@/components/ui/skiper-ui/skiper52";
 import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
@@ -144,45 +145,17 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="mt-14 grid gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <Reveal>
-              <h2 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl">What we do</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Our work prioritizes dignity-first support and practical programs that can sustain families long after immediate relief.
+        <section className="mt-14">
+          <Reveal>
+            <div className="mb-10 text-center">
+              <h2 className="text-pretty text-2xl font-semibold tracking-tight sm:text-4xl">What we do</h2>
+              <p className="mt-4 text-muted-foreground">
+                Our work prioritizes dignity-first support and practical programs.
               </p>
-            </Reveal>
-          </div>
-          <div className="lg:col-span-7">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                {
-                  title: "Passion",
-                  description: "We care deeply about the people we serve and the quality of our work.",
-                },
-                {
-                  title: "Dignity",
-                  description: "Protecting human dignity guides how we design and deliver every program.",
-                },
-                {
-                  title: "Excellence",
-                  description: "We learn continuously and improve with evidence, feedback, and experience.",
-                },
-                {
-                  title: "Transparency",
-                  description: "Clear social and financial accountability in everything we do.",
-                },
-              ].map((v, idx) => (
-                <Reveal key={v.title} delayMs={idx * 70}>
-                  <Card className="h-full">
-                    <CardContent className="p-5">
-                      <div className="text-sm font-semibold">{v.title}</div>
-                      <div className="mt-1 text-sm leading-6 text-muted-foreground">{v.description}</div>
-                    </CardContent>
-                  </Card>
-                </Reveal>
-              ))}
             </div>
+          </Reveal>
+          <div className="overflow-hidden rounded-3xl border bg-background/50 py-12">
+            <Skiper52 />
           </div>
         </section>
 
