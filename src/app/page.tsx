@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
-import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
 
@@ -24,36 +23,51 @@ import {
 
 import heroImage from "../../public/media/home-hero.jpg";
 
+import configPromise from "../../payload.config";
+import { getPayload } from "payload";
+import { RichText } from "@payloadcms/richtext-lexical/react";
+
 export const dynamic = "force-static";
 export const revalidate = false;
 
+async function getPageByPath(pathname: string) {
+  const payload = await getPayload({ config: configPromise });
+  const result = await payload.find({
+    collection: "pages",
+    where: { path: { equals: pathname } },
+    limit: 1,
+  });
+  return result.docs[0];
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageContentByPathname("/");
+  const page = await getPageByPath("/") as any;
   return {
     title: site.name,
-    description: page.description || site.tagline,
+    description: page?.seo?.metaDescription || site.tagline,
     alternates: { canonical: "/" },
     openGraph: {
       title: site.name,
-      description: page.description || site.tagline,
+      description: page?.seo?.metaDescription || site.tagline,
       url: "/",
       images: [{ url: "/og?path=/", width: 1200, height: 630, alt: site.name }],
     },
     twitter: {
       card: "summary_large_image",
       title: site.name,
-      description: page.description || site.tagline,
+      description: page?.seo?.metaDescription || site.tagline,
       images: ["/og?path=/"],
     },
   };
 }
 
 export default async function HomePage() {
-  const page = await getPageContentByPathname("/");
+  const page = await getPageByPath("/") as any;
 
   return (
     <MovingGradient className="border-b" gradientClassName="opacity-[0.06]">
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
+        {/* ... existing hero section ... */}
         <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
           <div className="space-y-6 lg:col-span-7">
             <Reveal>
@@ -141,7 +155,18 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {page?.content && (
+          <section className="mt-14">
+            <Card>
+              <CardContent className="p-6 sm:p-8">
+                <RichText data={page.content} />
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
         <section className="mt-14 grid gap-8 lg:grid-cols-12">
+          {/* ... existing "What we do" section ... */}
           <div className="lg:col-span-5">
             <Reveal>
               <h2 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl">What we do</h2>
@@ -275,7 +300,7 @@ export default async function HomePage() {
                   <div className="lg:col-span-7">
                     <h2 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl">Give with confidence</h2>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                      {page.description || site.tagline}
+                      {page?.seo?.metaDescription || site.tagline}
                     </p>
                   </div>
                   <div className="flex flex-col gap-3 lg:col-span-5">
