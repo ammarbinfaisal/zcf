@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Timeline } from "@/components/ui/timeline";
+import { Link001 } from "@/components/ui/skiper-ui/skiper40";
 import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
@@ -176,18 +177,18 @@ export default async function HomePage() {
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
               </div>
-              <CardContent className="space-y-2 p-6">
+              <CardContent className="space-y-4 p-6">
                 <div className="text-sm font-medium">Quick actions</div>
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <Link href="/donation/" className="underline underline-offset-4">
-                    Donate
-                  </Link>
-                  <Link href="/zakat-calculator/" className="underline underline-offset-4">
-                    Calculator
-                  </Link>
-                  <Link href="/about/" className="underline underline-offset-4">
-                    About
-                  </Link>
+                <div className="flex flex-col gap-3 text-sm">
+                  <Link001 href="/donation/" className="text-foreground">
+                    Donate to ZCF
+                  </Link001>
+                  <Link001 href="/zakat-calculator/" className="text-foreground">
+                    Zakat Calculator
+                  </Link001>
+                  <Link001 href="/about/" className="text-foreground">
+                    About our mission
+                  </Link001>
                 </div>
               </CardContent>
             </Card>
