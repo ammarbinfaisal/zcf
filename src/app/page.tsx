@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import { Spotlight } from "@/components/ui/spotlight";
+import { Skiper30 } from "@/components/ui/skiper-ui/skiper30";
 import { getPageContentByPathname } from "@/lib/raw-content";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/motion/reveal";
@@ -55,123 +54,119 @@ export default async function HomePage() {
 
   return (
     <MovingGradient className="border-b" gradientClassName="opacity-[0.06]">
-      <AuroraBackground className="border-b">
-        <Spotlight className="-top-24 left-0 md:left-60" fill="var(--brand-olive)" />
-        <Spotlight className="-top-32 left-10 md:left-80" fill="var(--brand-ochre)" />
+      <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
+        <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
+          <div className="space-y-6 lg:col-span-7">
+            <Reveal>
+              <p className="text-sm font-medium text-foreground/70">Official site</p>
+            </Reveal>
+            <Reveal delayMs={80}>
+              <h1 className="text-pretty text-3xl font-semibold tracking-tight sm:text-5xl">
+                Establishing a collective system of Zakat to uplift communities with dignity.
+              </h1>
+            </Reveal>
+            <Reveal delayMs={140}>
+              <p className="max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+                Relief and rehabilitation, education and skill-building, and long-term livelihood support—built on transparency.
+              </p>
+            </Reveal>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
-          <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
-            <div className="space-y-6 lg:col-span-7">
-              <Reveal>
-                <p className="text-sm font-medium text-foreground/70">Official site</p>
-              </Reveal>
-              <Reveal delayMs={80}>
-                <h1 className="text-pretty text-3xl font-semibold tracking-tight sm:text-5xl">
-                  Establishing a collective system of Zakat to uplift communities with dignity.
-                </h1>
-              </Reveal>
-              <Reveal delayMs={140}>
-                <p className="max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-                  Relief and rehabilitation, education and skill-building, and long-term livelihood support—built on transparency.
-                </p>
-              </Reveal>
+            <Reveal delayMs={200}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link href="/donation/" legacyBehavior>
+                  <HoverBorderGradient
+                    as="a"
+                    containerClassName="rounded-full"
+                    className="px-6 py-3"
+                    duration={1.4}
+                    idleAnimate={false}
+                  >
+                    Donate now
+                  </HoverBorderGradient>
+                </Link>
+                <Button asChild size="lg" variant="secondary">
+                  <Link href="/become-a-volunteer/">Become a volunteer</Link>
+                </Button>
+              </div>
+            </Reveal>
 
-              <Reveal delayMs={200}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Link href="/donation/" legacyBehavior>
-                    <HoverBorderGradient
-                      as="a"
-                      containerClassName="rounded-full"
-                      className="px-6 py-3"
-                      duration={1.4}
-                      idleAnimate={false}
-                    >
-                      Donate now
-                    </HoverBorderGradient>
-                  </Link>
-                  <Button asChild size="lg" variant="secondary">
-                    <Link href="/become-a-volunteer/">Become a volunteer</Link>
-                  </Button>
+            <Reveal delayMs={240}>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    title: "Transparent",
+                    desc: "Clear social and financial accountability.",
+                  },
+                  {
+                    title: "Dignity-first",
+                    desc: "Designed to protect and uplift families.",
+                  },
+                  {
+                    title: "Practical programs",
+                    desc: "Relief, education, skills, livelihoods.",
+                  },
+                ].map((it) => (
+                  <Card key={it.title} className="bg-background/70">
+                    <CardContent className="p-4">
+                      <div className="text-sm font-semibold">{it.title}</div>
+                      <div className="mt-1 text-xs leading-5 text-muted-foreground">{it.desc}</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </Reveal>
+
+            <Reveal delayMs={280}>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                <Link href="/zakat-nisab/" className="underline underline-offset-4">
+                  Zakat & Nisab
+                </Link>
+                <Link href="/zakat-calculator/" className="underline underline-offset-4">
+                  Zakat calculator
+                </Link>
+                <Link href="/our-projects/" className="underline underline-offset-4">
+                  Our projects
+                </Link>
+                <Link href="/contact/" className="underline underline-offset-4">
+                  Contact
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="lg:col-span-5">
+            <Reveal delayMs={120}>
+              <Card className="overflow-hidden">
+                <div className="relative aspect-[4/3] w-full">
+                  <Image
+                    src={heroImage}
+                    alt="ZCF community work"
+                    fill
+                    priority
+                    placeholder="blur"
+                    sizes="(max-width: 1024px) 100vw, 420px"
+                    className="object-cover"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
                 </div>
-              </Reveal>
-
-              <Reveal delayMs={240}>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[
-                    {
-                      title: "Transparent",
-                      desc: "Clear social and financial accountability.",
-                    },
-                    {
-                      title: "Dignity-first",
-                      desc: "Designed to protect and uplift families.",
-                    },
-                    {
-                      title: "Practical programs",
-                      desc: "Relief, education, skills, livelihoods.",
-                    },
-                  ].map((it) => (
-                    <Card key={it.title} className="bg-background/70">
-                      <CardContent className="p-4">
-                        <div className="text-sm font-semibold">{it.title}</div>
-                        <div className="mt-1 text-xs leading-5 text-muted-foreground">{it.desc}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </Reveal>
-
-              <Reveal delayMs={280}>
-                <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-                  <Link href="/zakat-nisab/" className="underline underline-offset-4">
-                    Zakat & Nisab
-                  </Link>
-                  <Link href="/zakat-calculator/" className="underline underline-offset-4">
-                    Zakat calculator
-                  </Link>
-                  <Link href="/our-projects/" className="underline underline-offset-4">
-                    Our projects
-                  </Link>
-                  <Link href="/contact/" className="underline underline-offset-4">
-                    Contact
-                  </Link>
-                </div>
-              </Reveal>
-            </div>
-
-            <div className="lg:col-span-5">
-              <Reveal delayMs={120}>
-                <Card className="overflow-hidden">
-                  <div className="relative aspect-[4/3] w-full">
-                    <Image
-                      src={heroImage}
-                      alt="ZCF community work"
-                      fill
-                      priority
-                      placeholder="blur"
-                      sizes="(max-width: 1024px) 100vw, 420px"
-                      className="object-cover"
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+                <CardContent className="space-y-3 p-6">
+                  <div className="text-sm font-medium">Explore</div>
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    <Link href="/news/" className="underline underline-offset-4">
+                      Latest updates
+                    </Link>
+                    <Link href="/image-gallery/" className="underline underline-offset-4">
+                      Gallery
+                    </Link>
+                    <Link href="/about/" className="underline underline-offset-4">
+                      About
+                    </Link>
                   </div>
-                  <CardContent className="space-y-3 p-6">
-                    <div className="text-sm font-medium">Explore</div>
-                    <div className="flex flex-wrap gap-3 text-sm">
-                      <Link href="/news/" className="underline underline-offset-4">
-                        Latest updates
-                      </Link>
-                      <Link href="/image-gallery/" className="underline underline-offset-4">
-                        Gallery
-                      </Link>
-                      <Link href="/about/" className="underline underline-offset-4">
-                        About
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Reveal>
-            </div>
-          </section>
+                </CardContent>
+              </Card>
+            </Reveal>
+          </div>
+        </section>
 
         <section className="mt-14 grid gap-8 lg:grid-cols-12">
           <div className="lg:col-span-5">
@@ -301,6 +296,20 @@ export default async function HomePage() {
 
         <section className="mt-14">
           <Reveal>
+            <div className="mb-8">
+              <h2 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl">Visual Journey</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                A glimpse into the impact of your Zakat on the ground.
+              </p>
+            </div>
+          </Reveal>
+          <div className="overflow-hidden rounded-3xl border">
+            <Skiper30 />
+          </div>
+        </section>
+
+        <section className="mt-14">
+          <Reveal>
             <Card>
               <CardContent className="p-6 sm:p-8">
                 <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
@@ -324,7 +333,6 @@ export default async function HomePage() {
           </Reveal>
         </section>
       </main>
-      </AuroraBackground>
     </MovingGradient>
   );
 }
